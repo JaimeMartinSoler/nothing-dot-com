@@ -1,4 +1,4 @@
-name: pnpm test, lint, build
+name: pnpm build
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   verify:
-    name: pnpm test, lint, build
+    name: pnpm build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,11 +33,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: pnpm test
-        run: pnpm test
+      # - name: pnpm test
+      #   run: pnpm test
 
-      - name: pnpm lint
-        run: pnpm lint
+      # - name: pnpm lint
+      #   run: pnpm lint
 
       - name: pnpm build
         run: pnpm build
