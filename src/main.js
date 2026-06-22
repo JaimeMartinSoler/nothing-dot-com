@@ -59,6 +59,10 @@ function wakeUp() {
 
 // Global interaction handler (click, touch, space, enter)
 function handleInteraction(e) {
+  // Only react to the primary (left) button; ignore middle/right clicks.
+  // Touch and keyboard-triggered calls have e.button === 0 / undefined.
+  if (e.button) return;
+
   // Ignore interactions if modal is open
   if (!languageModal.classList.contains('hidden')) return;
 
