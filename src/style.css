@@ -1,0 +1,154 @@
+:root {
+  --bg-color: #030303;
+  --text-color: #e5e5e5;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-size: 2.5rem;
+  --font-weight: 200;
+  
+  --blur-amount: 12px;
+  --zoom-amount: 0.9;
+  
+  --exit-blur-amount: 6px;
+  --exit-zoom-amount: 1.05;
+  
+  --enter-duration: 4s;
+  --enter-easing: cubic-bezier(0.25, 1, 0.5, 1);
+  --exit-duration: 1.5s;
+  --exit-easing: ease-out;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font-family);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Typography and Transition */
+.sentence {
+  font-size: var(--font-size);
+  font-weight: var(--font-weight);
+  letter-spacing: -0.03em;
+  text-align: center;
+  max-width: 80%;
+  line-height: 1.4;
+  white-space: pre-line;
+  
+  /* Initial state: The Void */
+  opacity: 0;
+  filter: blur(var(--blur-amount));
+  transform: scale(var(--zoom-amount));
+  pointer-events: none;
+  
+  /* Very slow, cinematic entrance */
+  transition: opacity var(--enter-duration) var(--enter-easing), 
+              filter var(--enter-duration) var(--enter-easing),
+              transform var(--enter-duration) var(--enter-easing);
+}
+
+.sentence.active {
+  opacity: 1;
+  filter: blur(0px);
+  transform: scale(1);
+}
+
+.sentence.exit {
+  opacity: 0;
+  filter: blur(var(--exit-blur-amount));
+  transform: scale(var(--exit-zoom-amount));
+  /* Exit transition */
+  transition: opacity var(--exit-duration) var(--exit-easing),
+              filter var(--exit-duration) var(--exit-easing),
+              transform var(--exit-duration) var(--exit-easing);
+}
+
+/* Modal styling */
+.modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(3, 3, 3, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.8s ease, backdrop-filter 0.8s ease;
+  z-index: 10;
+}
+
+.modal.hidden {
+  opacity: 0;
+  pointer-events: none;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease 0.2s, transform 0.8s ease 0.2s;
+}
+
+.modal:not(.hidden) .modal-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.modal-content p {
+  font-size: 1.2rem;
+  font-weight: 300;
+  color: #777;
+  margin: 0;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.modal-content button {
+  background: transparent;
+  border: 1px solid #333;
+  color: #aaa;
+  padding: 1rem 3rem;
+  font-size: 1.1rem;
+  font-weight: 300;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.4s ease, color 0.4s ease, background-color 0.4s ease;
+  font-family: inherit;
+  width: 200px;
+}
+
+.modal-content button:hover {
+  border-color: #888;
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.05);
+}

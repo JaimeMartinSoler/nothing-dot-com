@@ -1,0 +1,31 @@
+# Technical Architecture
+
+## Stack
+- **Framework/Bundler**: Vite (lightning fast, built-in YAML support via plugins, minimal overhead).
+- **Package Manager**: pnpm.
+- **Languages**: HTML, CSS, JavaScript (Vanilla JS is preferred for maximum control over micro-animations and performance, keeping the "nothingness" as lightweight as possible).
+
+## Project Structure
+- `/index.html`: The main entry point. Minimal DOM structure.
+- `/src/main.js`: Handles event listeners (click, keypress, double click), state management (current sentence index, cooldown state, language state), and DOM updates.
+- `/src/style.css`: Contains the CSS variables, typography, and complex transition animations.
+- `/src/config.yml`: The source of truth for all sentences and app configuration (like the 30s initial delay, 1s cooldown delay).
+
+## Core Mechanisms
+- **YAML Parsing & CSS Injection**: Uses `@modyfi/vite-plugin-yaml` to parse `config.yml`. `main.js` then reads the `visuals` block and dynamically injects them as CSS Custom Properties (`--bg-color`, `--blur-amount`, etc.) onto the document's `:root`.
+- **Event Handling**:
+  - Global `click`, `touchstart`, `keydown` (Space, Enter) listeners.
+  - Custom double-tap logic (measuring time between clicks/taps) since native `dblclick` can be inconsistent on mobile.
+- **Cooldown Logic**:
+  - `let isTransitioning = false;`
+  - On input, if `isTransitioning`, ignore. Otherwise, trigger transition, set to `true`, and use `setTimeout` to unlock after 1000ms.
+- **Animations**:
+  - Managed via CSS classes toggled by JS. For example, `.sentence-enter`, `.sentence-active`, `.sentence-exit`.
+  - Advanced CSS transitions/animations for opacity, transforms, and filters (blur).
+  - Web Animations API can be used if CSS transitions prove too rigid for the desired "vibe".
+
+## Styling & Aesthetics
+We avoid heavy UI libraries. The UI relies entirely on Vanilla CSS:
+- Advanced aesthetics via `filter: blur()`, `transform: scale()`, and configurable `cubic-bezier()` easing.
+- **Newlines**: The `.sentence` element uses `white-space: pre-line;` to natively respect `\n` characters injected from the YAML file while remaining secure from XSS.
+- All styles consume the CSS Custom Properties injected by `main.js` during initialization.
