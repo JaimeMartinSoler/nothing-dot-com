@@ -13,12 +13,5 @@
     "@modyfi/vite-plugin-yaml": "^1.1.1",
     "vite": "^8.0.16",
     "wrangler": "^3.90.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "sharp",
-      "workerd"
-    ]
   }
 }
