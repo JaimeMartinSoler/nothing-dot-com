@@ -338,6 +338,11 @@ packages:
       yaml:
         optional: true
 
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - workerd
+
 snapshots:
 
   '@emnapi/core@1.10.0':

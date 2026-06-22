@@ -59,6 +59,10 @@ function wakeUp() {
 
 // Global interaction handler (click, touch, space, enter)
 function handleInteraction(e) {
+  // Only react to the primary (left) button; ignore middle/right clicks.
+  // Touch and keyboard-triggered calls have e.button === 0 / undefined.
+  if (e.button) return;
+
   // Ignore interactions if modal is open
   if (!languageModal.classList.contains('hidden')) return;
 
@@ -82,8 +86,7 @@ function handleInteraction(e) {
   lastTap = currentTime;
 }
 
-document.addEventListener('click', handleInteraction);
-document.addEventListener('touchstart', handleInteraction, { passive: false });
+document.addEventListener('pointerdown', handleInteraction);
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' || e.code === 'Enter') {
     e.preventDefault();
@@ -141,6 +144,14 @@ function showLanguageModal() {
 function hideLanguageModal() {
   languageModal.classList.add('hidden');
 }
+
+languageModal.addEventListener('pointerdown', (e) => {
+  // If they click on the overlay background itself, not the content
+  if (e.target === languageModal) {
+    e.stopPropagation();
+    hideLanguageModal();
+  }
+});
 
 btnEn.addEventListener('click', (e) => {
   e.stopPropagation(); // prevent triggering global click
