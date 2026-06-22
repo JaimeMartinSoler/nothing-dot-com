@@ -10,3 +10,13 @@ This is "nothing-dot-com", an anti-dopamine, highly minimalist, slightly antagon
 4. **Vibe Coding**: The user expects to explore different visual effects. When modifying the code to add a new transition, explain the "vibe" of the transition (e.g., "This adds a deep cinematic blur that slowly comes into focus"). Try out different things when asked to show options.
 5. **No Clutter**: Do not add unnecessary comments, logs, or boilerplate. Keep the codebase as stark as the website itself.
 6. **YAML Config**: The text content, timing behavior, and ALL visual configurations (colors, fonts, animation timings, easing curves) must be stored in `config.yml`. This allows the site to be fully customized without touching JS/CSS source code.
+
+## Development Workflow (every new request, unless told otherwise)
+1. **Verify the branch.** The base for new work is `develop`. If the current
+   branch is not `develop`, stop and tell me before doing anything else.
+2. **Branch off.** Create `feature/<short-descriptive-slug>` for the request and
+   do all work there. If the same request grows into more changes, keep using
+   that branch — do NOT open a new one.
+3. **Develop, don't publish.** Make the changes on that branch. Do not commit, push, or open a PR yet.
+4. **Hand off.** When the work is done, ask me before committing — then, on my
+   go-ahead: commit, push, and open a PR to `develop`.
