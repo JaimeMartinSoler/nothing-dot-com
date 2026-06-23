@@ -1,7 +1,7 @@
 import data from './config.yml';
-import './style.css';
+import { listAlias, readShownLists, markListShown, orderedCandidates, LAST_INDEX_KEY } from './sentenceLists.js';
 
-const { behavior, visuals, sentences } = data;
+const { behavior, visuals } = data;
 
 // Apply visual config
 const root = document.documentElement;
@@ -46,13 +46,122 @@ let isTransitioning = false;
 let lastTap = 0;
 let tapTimeout;
 
-// Initialization: start the void timer
-setTimeout(() => {
-  wakeUp();
-}, behavior.initial_delay_ms);
+// Sentence lists are discovered lazily. `import.meta.glob` (non-eager) bakes ONLY
+// the file paths into the main bundle and emits each list as a separate chunk, so
+// the browser downloads just the one list we end up selecting — this scales to
+// thousands of lists without ever fetching them all to pick one.
+const sentenceLists = import.meta.glob('./sentences/*.yaml');
+
+let sentences = [];
+
+// Set when a path override pins both a list AND an index, so init can render it
+// immediately instead of forcing the checker through the full initial delay.
+let skipInitialDelay = false;
+
+// Try candidate lists in order until one's chunk loads. A list is only recorded
+// as "shown" AFTER its chunk resolves, so a flaky network never burns a list the
+// user never saw — and we fall through to another list instead of a blank page.
+async function loadSentences() {
+  const paths = Object.keys(sentenceLists);
+  const allAliases = paths.map(listAlias);
+
+  // Hidden path override: /<SENTENCE_NAME> or /<SENTENCE_NAME>/<SENTENCE_IDX>
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  if (pathParts.length > 0) {
+    const listName = pathParts[0];
+    const targetPath = paths.find(p => listAlias(p) === listName);
+
+    if (targetPath) {
+      try {
+        const module = await sentenceLists[targetPath]();
+        const loaded = Array.isArray(module.default) ? module.default : [];
+
+        let startIdx = 0;
+        if (pathParts.length > 1) {
+          const parsedIdx = parseInt(pathParts[1], 10);
+          if (!isNaN(parsedIdx) && parsedIdx >= 0 && parsedIdx < loaded.length) {
+            startIdx = parsedIdx;
+            // An explicit list + index is a "check this now" link — skip the void delay.
+            skipInitialDelay = true;
+          }
+        }
+
+        // Don't re-record on every reload of the same direct link, otherwise a
+        // bookmarked `/000000` would append a duplicate entry to the shown-list
+        // history on each visit and grow it without bound.
+        const targetAlias = listAlias(targetPath);
+        const shown = readShownLists();
+        if (shown[shown.length - 1] !== targetAlias) {
+          markListShown(targetAlias, allAliases);
+        }
+        if (behavior.resume_last_sentence) {
+          localStorage.setItem(LAST_INDEX_KEY, startIdx.toString());
+        }
+
+        currentIndex = startIdx;
+        return loaded;
+      } catch {
+        // Fall back to normal behavior if the list fails to load
+      }
+    }
+  }
+
+  if (behavior.resume_last_sentence) {
+    let lastIdx = parseInt(localStorage.getItem(LAST_INDEX_KEY), 10);
+    if (isNaN(lastIdx)) lastIdx = -1;
+
+    if (lastIdx !== -1) {
+      const shown = readShownLists();
+      if (shown.length > 0) {
+        const lastShownAlias = shown[shown.length - 1];
+        const path = paths.find(p => listAlias(p) === lastShownAlias);
+        if (path) {
+          try {
+            const module = await sentenceLists[path]();
+            const loaded = Array.isArray(module.default) ? module.default : [];
+            // Only resume if the stored index still points inside the list. If
+            // the list was trimmed/edited (or the value was tampered with) the
+            // index can be stale, so we discard it and fall through to a fresh
+            // list rather than indexing past the end.
+            if (lastIdx < loaded.length) {
+              currentIndex = lastIdx;
+              return loaded;
+            }
+          } catch {
+            // Chunk failed to load; fall through to pick a new one
+          }
+        }
+      }
+    }
+  }
+
+  currentIndex = 0;
+  const candidates = orderedCandidates(paths, readShownLists(), behavior.start_with_first_list);
+
+  for (const path of candidates) {
+    try {
+      const module = await sentenceLists[path]();
+      const loaded = Array.isArray(module.default) ? module.default : [];
+      markListShown(listAlias(path), allAliases);
+      return loaded;
+    } catch {
+      // Chunk failed to load; try the next candidate.
+    }
+  }
+  return [];
+}
+
+// Initialization: download a selected list, then start the void timer.
+// `loadSentences` always resolves (worst case to `[]`), so no rejection to catch.
+loadSentences().then((loaded) => {
+  sentences = loaded;
+  setTimeout(() => {
+    wakeUp();
+  }, skipInitialDelay ? 0 : behavior.initial_delay_ms);
+});
 
 function wakeUp() {
-  if (isAwake) return;
+  if (isAwake || sentences.length === 0) return;
   isAwake = true;
   showSentence(currentIndex);
 }
@@ -96,7 +205,8 @@ document.addEventListener('keydown', (e) => {
 
 function nextSentence() {
   if (currentIndex >= sentences.length - 1) {
-    // If we're at the end, just do nothing. Let them keep clicking.
+    // At the end — do nothing, let them keep clicking. The list was already
+    // marked "done" when the final sentence was shown (see showSentence).
     return;
   }
   
@@ -117,6 +227,15 @@ function showSentence(index) {
   // Reset classes
   contentDiv.classList.remove('exit');
   contentDiv.classList.remove('active');
+  
+  if (behavior.resume_last_sentence) {
+    // Mark the list "done" (-1) as soon as its final sentence is shown, so a
+    // visitor who simply closes the tab on the last line starts a fresh list
+    // next time instead of being stuck re-reading it. Otherwise store the index
+    // we're on so the next visit resumes here.
+    const isLastSentence = index >= sentences.length - 1;
+    localStorage.setItem(LAST_INDEX_KEY, isLastSentence ? '-1' : index.toString());
+  }
   
   // Force a browser reflow to ensure the initial state is rendered before adding active
   void contentDiv.offsetWidth;
