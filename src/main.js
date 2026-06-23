@@ -62,6 +62,38 @@ async function loadSentences() {
   const paths = Object.keys(sentenceLists);
   const allAliases = paths.map(listAlias);
 
+  // Hidden path override: /<SENTENCE_NAME> or /<SENTENCE_NAME>/<SENTENCE_IDX>
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  if (pathParts.length > 0) {
+    const listName = pathParts[0];
+    const targetPath = paths.find(p => listAlias(p) === listName);
+    
+    if (targetPath) {
+      try {
+        const module = await sentenceLists[targetPath]();
+        const loaded = Array.isArray(module.default) ? module.default : [];
+        
+        let startIdx = 0;
+        if (pathParts.length > 1) {
+          const parsedIdx = parseInt(pathParts[1], 10);
+          if (!isNaN(parsedIdx) && parsedIdx >= 0 && parsedIdx < loaded.length) {
+            startIdx = parsedIdx;
+          }
+        }
+        
+        markListShown(listAlias(targetPath), allAliases);
+        if (behavior.resume_last_sentence) {
+          localStorage.setItem(LAST_INDEX_KEY, startIdx.toString());
+        }
+        
+        currentIndex = startIdx;
+        return loaded;
+      } catch {
+        // Fall back to normal behavior if the list fails to load
+      }
+    }
+  }
+
   if (behavior.resume_last_sentence) {
     let lastIdx = parseInt(localStorage.getItem(LAST_INDEX_KEY), 10);
     if (isNaN(lastIdx)) lastIdx = -1;
