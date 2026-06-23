@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
 import {
   SHOWN_LISTS_KEY,
   listAlias,
@@ -38,33 +39,33 @@ const ALIASES = PATHS.map(listAlias);
 
 describe('listAlias', () => {
   it('extracts the filename without extension as the alias', () => {
-    expect(listAlias('./sentences/000001.yaml')).toBe('000001');
+    assert.equal(listAlias('./sentences/000001.yaml'), '000001');
   });
 
   it('supports non-numeric aliases (any word)', () => {
-    expect(listAlias('./sentences/monday-blues.yaml')).toBe('monday-blues');
+    assert.equal(listAlias('./sentences/monday-blues.yaml'), 'monday-blues');
   });
 
   it('falls back to the raw path when it does not match', () => {
-    expect(listAlias('weird')).toBe('weird');
+    assert.equal(listAlias('weird'), 'weird');
   });
 });
 
 describe('readShownLists', () => {
   it('returns [] when nothing is stored', () => {
-    expect(readShownLists(fakeStorage())).toEqual([]);
+    assert.deepEqual(readShownLists(fakeStorage()), []);
   });
 
   it('returns [] for malformed JSON', () => {
-    expect(readShownLists(fakeStorage({ [SHOWN_LISTS_KEY]: 'not json' }))).toEqual([]);
+    assert.deepEqual(readShownLists(fakeStorage({ [SHOWN_LISTS_KEY]: 'not json' })), []);
   });
 
   it('returns [] when the stored value is not an array', () => {
-    expect(readShownLists(fakeStorage({ [SHOWN_LISTS_KEY]: '{"a":1}' }))).toEqual([]);
+    assert.deepEqual(readShownLists(fakeStorage({ [SHOWN_LISTS_KEY]: '{"a":1}' })), []);
   });
 
   it('parses a stored array', () => {
-    expect(readShownLists(fakeStorage({ [SHOWN_LISTS_KEY]: '["000000"]' }))).toEqual(['000000']);
+    assert.deepEqual(readShownLists(fakeStorage({ [SHOWN_LISTS_KEY]: '["000000"]' })), ['000000']);
   });
 });
 
@@ -72,20 +73,20 @@ describe('markListShown', () => {
   it('appends the alias to the stored history', () => {
     const storage = fakeStorage();
     markListShown('000000', ALIASES, storage);
-    expect(readShownLists(storage)).toEqual(['000000']);
+    assert.deepEqual(readShownLists(storage), ['000000']);
     markListShown('000001', ALIASES, storage);
-    expect(readShownLists(storage)).toEqual(['000000', '000001']);
+    assert.deepEqual(readShownLists(storage), ['000000', '000001']);
   });
 
   it('resets history before recording once every list has been shown', () => {
     const storage = fakeStorage({ [SHOWN_LISTS_KEY]: JSON.stringify(ALIASES) });
     markListShown('000001', ALIASES, storage);
-    expect(readShownLists(storage)).toEqual(['000001']);
+    assert.deepEqual(readShownLists(storage), ['000001']);
   });
 
   it('does not throw when storage.setItem throws (private mode / quota)', () => {
     const storage = throwingStorage();
-    expect(() => markListShown('000000', ALIASES, storage)).not.toThrow();
+    assert.doesNotThrow(() => markListShown('000000', ALIASES, storage));
   });
 });
 
@@ -93,52 +94,52 @@ describe('orderedCandidates', () => {
   const always = () => 0; // deterministic shuffle
 
   it('returns [] when there are no paths', () => {
-    expect(orderedCandidates([], [], true, always)).toEqual([]);
+    assert.deepEqual(orderedCandidates([], [], true, always), []);
   });
 
   it('starts a fresh cycle with the first (sorted) list when the flag is on', () => {
     const result = orderedCandidates(PATHS, [], true, always);
-    expect(result[0]).toBe('./sentences/000000.yaml');
+    assert.equal(result[0], './sentences/000000.yaml');
   });
 
   it('orders by the sorted-first list even if paths arrive unsorted', () => {
     const unsorted = [PATHS[2], PATHS[0], PATHS[1]];
     const result = orderedCandidates(unsorted, [], true, always);
-    expect(result[0]).toBe('./sentences/000000.yaml');
+    assert.equal(result[0], './sentences/000000.yaml');
   });
 
   it('does not force the first list when the flag is off', () => {
     // With random()===0 the Fisher-Yates shuffle moves index 0 away from the
     // front, so a fresh cycle no longer starts deterministically with 000000.
     const result = orderedCandidates(PATHS, [], false, always);
-    expect(result[0]).not.toBe('./sentences/000000.yaml');
-    expect(result).toHaveLength(PATHS.length);
+    assert.notEqual(result[0], './sentences/000000.yaml');
+    assert.equal(result.length, PATHS.length);
   });
 
   it('excludes already-shown lists', () => {
     const result = orderedCandidates(PATHS, ['000000'], false, always);
-    expect(result.map(listAlias)).not.toContain('000000');
-    expect(result.map(listAlias).sort()).toEqual(['000001', '000002']);
+    assert.ok(!result.map(listAlias).includes('000000'));
+    assert.deepEqual(result.map(listAlias).sort(), ['000001', '000002']);
   });
 
   it('only the unseen list remains when all but one are shown', () => {
     const result = orderedCandidates(PATHS, ['000000', '000002'], false, always);
-    expect(result).toEqual(['./sentences/000001.yaml']);
+    assert.deepEqual(result, ['./sentences/000001.yaml']);
   });
 
   it('resets to the full set once every list has been shown', () => {
     const result = orderedCandidates(PATHS, ALIASES, false, always);
-    expect(result.map(listAlias).sort()).toEqual(['000000', '000001', '000002']);
+    assert.deepEqual(result.map(listAlias).sort(), ['000000', '000001', '000002']);
   });
 
   it('starts a reset cycle with the first list when the flag is on', () => {
     const result = orderedCandidates(PATHS, ALIASES, true, always);
-    expect(result[0]).toBe('./sentences/000000.yaml');
+    assert.equal(result[0], './sentences/000000.yaml');
   });
 
   it('keeps every candidate so a failed load can retry another list', () => {
     const result = orderedCandidates(PATHS, [], true, always);
-    expect(result.map(listAlias).sort()).toEqual(['000000', '000001', '000002']);
+    assert.deepEqual(result.map(listAlias).sort(), ['000000', '000001', '000002']);
   });
 });
 
@@ -151,11 +152,11 @@ describe('no-repeat selection over a full cycle', () => {
       seen.push(listAlias(path));
       markListShown(listAlias(path), ALIASES, storage);
     }
-    expect([...seen].sort()).toEqual([...ALIASES].sort());
+    assert.deepEqual([...seen].sort(), [...ALIASES].sort());
 
     // History is full; the next pick reuses an alias but resets the stored history.
     const [next] = orderedCandidates(PATHS, readShownLists(storage), false, () => 0);
     markListShown(listAlias(next), ALIASES, storage);
-    expect(readShownLists(storage)).toEqual([listAlias(next)]);
+    assert.deepEqual(readShownLists(storage), [listAlias(next)]);
   });
 });
