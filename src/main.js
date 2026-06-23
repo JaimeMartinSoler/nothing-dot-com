@@ -61,6 +61,31 @@ let sentences = [];
 async function loadSentences() {
   const paths = Object.keys(sentenceLists);
   const allAliases = paths.map(listAlias);
+
+  if (behavior.resume_last_sentence) {
+    let lastIdx = parseInt(localStorage.getItem('nothing_sentence_last_idx'), 10);
+    if (isNaN(lastIdx)) lastIdx = -1;
+
+    if (lastIdx !== -1) {
+      const shown = readShownLists();
+      if (shown.length > 0) {
+        const lastShownAlias = shown[shown.length - 1];
+        const path = paths.find(p => listAlias(p) === lastShownAlias);
+        if (path) {
+          try {
+            const module = await sentenceLists[path]();
+            const loaded = Array.isArray(module.default) ? module.default : [];
+            currentIndex = lastIdx;
+            return loaded;
+          } catch {
+            // Chunk failed to load; fall through to pick a new one
+          }
+        }
+      }
+    }
+  }
+
+  currentIndex = 0;
   const candidates = orderedCandidates(paths, readShownLists(), behavior.start_with_first_list);
 
   for (const path of candidates) {
@@ -133,6 +158,9 @@ document.addEventListener('keydown', (e) => {
 
 function nextSentence() {
   if (currentIndex >= sentences.length - 1) {
+    if (behavior.resume_last_sentence) {
+      localStorage.setItem('nothing_sentence_last_idx', '-1');
+    }
     // If we're at the end, just do nothing. Let them keep clicking.
     return;
   }
@@ -154,6 +182,10 @@ function showSentence(index) {
   // Reset classes
   contentDiv.classList.remove('exit');
   contentDiv.classList.remove('active');
+  
+  if (behavior.resume_last_sentence) {
+    localStorage.setItem('nothing_sentence_last_idx', index.toString());
+  }
   
   // Force a browser reflow to ensure the initial state is rendered before adding active
   void contentDiv.offsetWidth;

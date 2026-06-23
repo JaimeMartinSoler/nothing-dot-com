@@ -17,6 +17,11 @@ behavior:
   # Set to false to make selection fully random, including on a fresh cycle.
   start_with_first_list: true
 
+  # -> If true, returning users will resume from the exact list and sentence they left off.
+  # When they finish a list, the next visit will start a fresh list.
+  # If false, every visit loads a new list from the beginning.
+  resume_last_sentence: true
+
 
 # ==============================================================================
 # VISUALS CONFIGURATION

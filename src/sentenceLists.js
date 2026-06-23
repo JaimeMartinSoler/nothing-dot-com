@@ -3,7 +3,7 @@
 // unit tested in isolation. Storage and randomness are injectable for the same
 // reason.
 
-export const SHOWN_LISTS_KEY = 'nothing_shown_lists';
+export const SHOWN_LISTS_KEY = 'nothing_sentences_shown';
 
 // Filename (no extension) of a list path, used as its stored alias:
 // './sentences/000001.yaml' -> '000001'. Aliases can be any word, not just digits.
