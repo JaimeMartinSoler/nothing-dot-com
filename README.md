@@ -6,6 +6,8 @@ A minimalistic, low dopamine web experience that subverts user expectations. The
 - **The Void**: A 30-second initial delay before anything happens.
 - **Micro-interactions**: Beautiful, cinematic blur and zoom transitions.
 - **Data-Driven Aesthetics**: Everything from text content to animation easing curves is controlled via `src/config.yml`.
+- **Persistent Progress**: Resumes exactly where you left off if you close the tab.
+- **Hidden Routing**: Direct access to specific sentences via URL paths (e.g., `/<list_name>/<index>`).
 - **i18n**: English and Spanish support with a double-tap language switcher.
 
 ## Development
@@ -25,6 +27,11 @@ pnpm dev
 ### Build
 ```bash
 pnpm build
+```
+
+### Test
+```bash
+pnpm test
 ```
 
 ## Configuration
