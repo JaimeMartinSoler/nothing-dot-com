@@ -38,8 +38,8 @@ const languageModal = document.getElementById('language-modal');
 const btnEn = document.getElementById('btn-en');
 const btnEs = document.getElementById('btn-es');
 
-// Infer language based on browser preference
-let currentLanguage = navigator.language.startsWith('es') ? 'es' : 'en';
+// Infer language based on local storage or browser preference
+let currentLanguage = localStorage.getItem('nothing_lang') || (navigator.language.startsWith('es') ? 'es' : 'en');
 let currentIndex = 0;
 let isAwake = false;
 let isTransitioning = false;
@@ -165,6 +165,7 @@ btnEs.addEventListener('click', (e) => {
 
 function setLanguage(lang) {
   currentLanguage = lang;
+  localStorage.setItem('nothing_lang', lang);
   hideLanguageModal();
   if (isAwake) {
     // Update the text immediately without re-triggering animations
