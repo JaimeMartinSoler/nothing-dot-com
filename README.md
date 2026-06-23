@@ -28,4 +28,14 @@ pnpm build
 ```
 
 ## Configuration
-To modify the text, the timings, or the visual effects, simply edit `src/config.yml`. The changes will automatically reflect in the UI.
+To modify the timings or the visual effects, simply edit `src/config.yml`. The changes will automatically reflect in the UI.
+
+### Sentences
+Sentences live as individual YAML files in `src/sentences/` (one sentence per file, e.g. `sentences0000.yaml`):
+
+```yaml
+en: "There is no content here"
+es: "Aquí no hay contenido"
+```
+
+To add a sentence, just drop in a new file. On each visit the site shows a random sentence that hasn't been seen yet (tracked via `localStorage`), and only that single file is downloaded — so the collection scales to thousands of sentences without bloating the initial load.

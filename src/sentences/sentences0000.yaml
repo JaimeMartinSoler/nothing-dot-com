@@ -1,0 +1,4 @@
+# A single sentence definition, shown to the user in their chosen language.
+# Newlines (\n) are respected on screen via `white-space: pre-line;`.
+en: "Are you still here?\n(double tap/click to change language)"
+es: "¿Sigues aquí?\n(toca/haz click dos veces para cambiar de idioma)"

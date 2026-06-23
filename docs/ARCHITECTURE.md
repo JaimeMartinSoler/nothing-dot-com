@@ -7,9 +7,16 @@
 
 ## Project Structure
 - `/index.html`: The main entry point. Minimal DOM structure.
-- `/src/main.js`: Handles event listeners (click, keypress, double click), state management (current sentence index, cooldown state, language state), and DOM updates.
+- `/src/main.js`: Handles event listeners (click, keypress, double click), state management (current sentence, cooldown state, language state), sentence discovery/selection, and DOM updates.
 - `/src/style.css`: Contains the CSS variables, typography, and complex transition animations.
-- `/src/config.yml`: The source of truth for all sentences and app configuration (like the 30s initial delay, 1s cooldown delay).
+- `/src/config.yml`: The source of truth for app configuration (like the initial delay and cooldown) and `visuals`. No longer holds sentences.
+- `/src/sentences/`: One YAML file per sentence (e.g. `sentences0000.yaml`), each defining the `en`/`es` text. This folder is the source of truth for content.
+
+## Sentence Discovery & Efficient Loading
+Sentences are intentionally NOT bundled together, so the set can scale to hundreds or thousands of files without bloating the initial download.
+- **Discovery without download**: `main.js` uses Vite's `import.meta.glob('./sentences/*.yaml')` in lazy mode. This yields a map of `{ filename -> loader() }`. The filenames are known at build time, but **no sentence content is fetched** until a loader is invoked. Selection therefore operates purely on the list of filenames.
+- **Random, non-repeating selection**: On each transition a random file is chosen from those not yet seen. The list of shown files is persisted in `localStorage` (`nothing_shown_sentences`). Once every file has been shown, the history resets and a new cycle begins.
+- **Single-file fetch**: Vite code-splits each YAML into its own chunk, so invoking a loader downloads only that one selected sentence. The next sentence is prefetched during the exit animation (and the first during the initial void delay) so loading is imperceptible.
 
 ## Core Mechanisms
 - **YAML Parsing & CSS Injection**: Uses `@modyfi/vite-plugin-yaml` to parse `config.yml`. `main.js` then reads the `visuals` block and dynamically injects them as CSS Custom Properties (`--bg-color`, `--blur-amount`, etc.) onto the document's `:root`.

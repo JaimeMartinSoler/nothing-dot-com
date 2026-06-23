@@ -1,7 +1,75 @@
 import data from './config.yml';
 import './style.css';
 
-const { behavior, visuals, sentences } = data;
+const { behavior, visuals } = data;
+
+// ============================================================================
+// SENTENCE DISCOVERY (efficient, scales to thousands of files)
+// ============================================================================
+// `import.meta.glob` (lazy/non-eager) gives us a map of { path -> loader }.
+// The KEYS (filenames) are known at build time WITHOUT downloading any file
+// content — so we can pick a sentence at random just from the list of names.
+// Vite code-splits each YAML into its own chunk, so calling a loader only
+// fetches that single selected sentence file over the network.
+const sentenceModules = import.meta.glob('./sentences/*.yaml');
+const sentenceKeys = Object.keys(sentenceModules).sort();
+
+// localStorage key holding the list of sentence files already shown to this
+// browser, so we never repeat one until every sentence has been seen.
+const SHOWN_STORAGE_KEY = 'nothing_shown_sentences';
+
+function getShownKeys() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(SHOWN_STORAGE_KEY));
+    return Array.isArray(stored) ? stored : [];
+  } catch {
+    return [];
+  }
+}
+
+function setShownKeys(keys) {
+  try {
+    localStorage.setItem(SHOWN_STORAGE_KEY, JSON.stringify(keys));
+  } catch {
+    /* localStorage may be unavailable (private mode); selection still works. */
+  }
+}
+
+// Pick a random sentence file that hasn't been shown yet. Once every file has
+// been displayed, the history resets and selection starts over from scratch.
+// Operates purely on filenames — no sentence content is fetched here.
+function selectNextSentenceKey() {
+  if (sentenceKeys.length === 0) return null;
+
+  // Drop any stale entries (files that no longer exist) from the history.
+  let shown = getShownKeys().filter((k) => sentenceKeys.includes(k));
+  let available = sentenceKeys.filter((k) => !shown.includes(k));
+
+  if (available.length === 0) {
+    // Everything has been seen: reset and start a fresh cycle.
+    shown = [];
+    available = sentenceKeys.slice();
+  }
+
+  const key = available[Math.floor(Math.random() * available.length)];
+  shown.push(key);
+  setShownKeys(shown);
+  return key;
+}
+
+// Fetch the single selected sentence file. This is the ONLY network request
+// for sentence content, and it happens lazily, one file at a time.
+async function loadSentence(key) {
+  const mod = await sentenceModules[key]();
+  return mod.default ?? mod;
+}
+
+// Select + start fetching the next sentence ahead of time so it's ready the
+// moment it needs to be displayed (e.g. during the initial void delay).
+function preloadNextSentence() {
+  const key = selectNextSentenceKey();
+  return key ? loadSentence(key) : Promise.resolve(null);
+}
 
 // Apply visual config
 const root = document.documentElement;
@@ -40,21 +108,28 @@ const btnEs = document.getElementById('btn-es');
 
 // Infer language based on local storage or browser preference
 let currentLanguage = localStorage.getItem('nothing_lang') || (navigator.language.startsWith('es') ? 'es' : 'en');
-let currentIndex = 0;
+let currentSentence = null;
 let isAwake = false;
 let isTransitioning = false;
 let lastTap = 0;
 let tapTimeout;
+
+// Kick off loading the first sentence immediately so it's ready by the time
+// the void delay ends (only this one file is fetched).
+let pendingSentence = preloadNextSentence();
 
 // Initialization: start the void timer
 setTimeout(() => {
   wakeUp();
 }, behavior.initial_delay_ms);
 
-function wakeUp() {
+async function wakeUp() {
   if (isAwake) return;
   isAwake = true;
-  showSentence(currentIndex);
+  const content = await pendingSentence;
+  if (!content) return;
+  currentSentence = content;
+  showSentence(content);
 }
 
 // Global interaction handler (click, touch, space, enter)
@@ -94,42 +169,51 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-function nextSentence() {
-  if (currentIndex >= sentences.length - 1) {
-    // If we're at the end, just do nothing. Let them keep clicking.
-    return;
-  }
-  
-  currentIndex++;
+async function nextSentence() {
+  if (sentenceKeys.length === 0) return;
+
   isTransitioning = true;
-  
+
+  // Start fetching the next (random, unshown) sentence while the exit
+  // animation plays, so the load is invisible to the user.
+  pendingSentence = preloadNextSentence();
+
   // Trigger exit animation
   contentDiv.classList.remove('active');
   contentDiv.classList.add('exit');
-  
-  // Wait for exit animation to complete, then show next
-  setTimeout(() => {
-    showSentence(currentIndex);
-  }, exitDurationMs);
+
+  // Wait for BOTH the exit animation and the fetch to finish, then show it.
+  const [content] = await Promise.all([
+    pendingSentence,
+    new Promise((resolve) => setTimeout(resolve, exitDurationMs)),
+  ]);
+
+  if (!content) {
+    isTransitioning = false;
+    return;
+  }
+
+  currentSentence = content;
+  showSentence(content);
 }
 
-function showSentence(index) {
+function showSentence(content) {
   // Reset classes
   contentDiv.classList.remove('exit');
   contentDiv.classList.remove('active');
-  
+
   // Force a browser reflow to ensure the initial state is rendered before adding active
   void contentDiv.offsetWidth;
-  
-  contentDiv.textContent = sentences[index][currentLanguage];
-  
+
+  contentDiv.textContent = content[currentLanguage] ?? content.en ?? '';
+
   // Add active class to trigger the smooth fade in
   contentDiv.classList.add('active');
-  
+
   isTransitioning = true;
-  
+
   // Only wait for the cooldown before allowing the next click.
-  // We deliberately do NOT wait for enterDurationMs here, so the user can 
+  // We deliberately do NOT wait for enterDurationMs here, so the user can
   // trigger the exit transition even if the text hasn't fully faded in yet!
   setTimeout(() => {
     isTransitioning = false;
@@ -167,8 +251,8 @@ function setLanguage(lang) {
   currentLanguage = lang;
   localStorage.setItem('nothing_lang', lang);
   hideLanguageModal();
-  if (isAwake) {
+  if (isAwake && currentSentence) {
     // Update the text immediately without re-triggering animations
-    contentDiv.textContent = sentences[currentIndex][currentLanguage];
+    contentDiv.textContent = currentSentence[currentLanguage] ?? currentSentence.en ?? '';
   }
 }
