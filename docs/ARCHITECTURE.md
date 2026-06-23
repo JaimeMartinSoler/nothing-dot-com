@@ -9,10 +9,13 @@
 - `/index.html`: The main entry point. Minimal DOM structure.
 - `/src/main.js`: Handles event listeners (click, keypress, double click), state management (current sentence index, cooldown state, language state), and DOM updates.
 - `/src/style.css`: Contains the CSS variables, typography, and complex transition animations.
-- `/src/config.yml`: The source of truth for all sentences and app configuration (like the 30s initial delay, 1s cooldown delay).
+- `/src/config.yml`: The source of truth for app configuration (like the initial delay and cooldown delay) and `visuals`. Sentences no longer live here.
+- `/src/sentences/`: One YAML list of sentences per file (`sentences-000000.yaml`, `sentences-000001.yaml`, ...). One list is selected at random per page load.
 
 ## Core Mechanisms
 - **YAML Parsing & CSS Injection**: Uses `@modyfi/vite-plugin-yaml` to parse `config.yml`. `main.js` then reads the `visuals` block and dynamically injects them as CSS Custom Properties (`--bg-color`, `--blur-amount`, etc.) onto the document's `:root`.
+- **Sentence Discovery & Lazy Loading**: `main.js` uses Vite's `import.meta.glob('./sentences/*.yaml')` (non-eager) so only the file *paths* are baked into the main bundle and each list is emitted as a separate chunk. On load, a list not yet seen by this browser is chosen at random and ONLY that one chunk is downloaded. This scales to thousands of lists without fetching them all just to pick one.
+- **Repetition Tracking**: Shown list aliases (the numeric suffix, e.g. `000001`) are stored in `localStorage` under `nothing_shown_lists`. Selection draws only from lists not yet shown; once all have been shown the history resets and starts over.
 - **Event Handling**:
   - Global `click`, `touchstart`, `keydown` (Space, Enter) listeners.
   - Custom double-tap logic (measuring time between clicks/taps) since native `dblclick` can be inconsistent on mobile.

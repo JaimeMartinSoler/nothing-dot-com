@@ -77,37 +77,8 @@ visuals:
 # ==============================================================================
 # CONTENT SCRIPT
 # ==============================================================================
-# The sequence of messages the user will see. 
-# The system supports multiple languages (currently en/es).
+# The sentences are no longer stored here. They now live as individual YAML
+# lists inside `src/sentences/` (e.g. `sentences-000000.yaml`). On every page
+# load `main.js` picks one list at random (avoiding repeats via localStorage)
+# and lazily downloads ONLY that file. See `src/main.js` for details.
 # ==============================================================================
-sentences:
-
-  - en: "Are you still here?\n(double tap/click to change language)"
-    es: "¿Sigues aquí?\n(toca/haz click dos veces para cambiar de idioma)"
-
-  - en: "Are you dumb?"
-    es: "¿Eres tonto?"
-
-  - en: "Did you check the name of the website?"
-    es: "¿Te has fijado en el nombre de la web?"
-
-  - en: "This is nothing..."
-    es: "Esto es la nada..."
-
-  - en: "There is no content here"
-    es: "Aquí no hay contenido"
-
-  - en: "Seriously, what are you waiting for?"
-    es: "En serio, ¿qué estás esperando?"
-
-  - en: "A reward?"
-    es: "¿Una recompensa?"
-
-  - en: "There are no rewards in nothingness"
-    es: "No hay recompensas en la nada"
-
-  - en: "Just close the tab"
-    es: "Simplemente cierra la pestaña"
-
-  - en: "Or keep clicking. It's your time"
-    es: "O sigue haciendo clic. Es tu tiempo"
