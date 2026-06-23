@@ -1,5 +1,5 @@
 import data from './config.yml';
-import { listAlias, readShownLists, markListShown, orderedCandidates } from './sentenceLists.js';
+import { listAlias, readShownLists, markListShown, orderedCandidates, LAST_INDEX_KEY } from './sentenceLists.js';
 import './style.css';
 
 const { behavior, visuals } = data;
@@ -63,7 +63,7 @@ async function loadSentences() {
   const allAliases = paths.map(listAlias);
 
   if (behavior.resume_last_sentence) {
-    let lastIdx = parseInt(localStorage.getItem('nothing_sentence_last_idx'), 10);
+    let lastIdx = parseInt(localStorage.getItem(LAST_INDEX_KEY), 10);
     if (isNaN(lastIdx)) lastIdx = -1;
 
     if (lastIdx !== -1) {
@@ -75,8 +75,14 @@ async function loadSentences() {
           try {
             const module = await sentenceLists[path]();
             const loaded = Array.isArray(module.default) ? module.default : [];
-            currentIndex = lastIdx;
-            return loaded;
+            // Only resume if the stored index still points inside the list. If
+            // the list was trimmed/edited (or the value was tampered with) the
+            // index can be stale, so we discard it and fall through to a fresh
+            // list rather than indexing past the end.
+            if (lastIdx < loaded.length) {
+              currentIndex = lastIdx;
+              return loaded;
+            }
           } catch {
             // Chunk failed to load; fall through to pick a new one
           }
@@ -158,10 +164,8 @@ document.addEventListener('keydown', (e) => {
 
 function nextSentence() {
   if (currentIndex >= sentences.length - 1) {
-    if (behavior.resume_last_sentence) {
-      localStorage.setItem('nothing_sentence_last_idx', '-1');
-    }
-    // If we're at the end, just do nothing. Let them keep clicking.
+    // At the end — do nothing, let them keep clicking. The list was already
+    // marked "done" when the final sentence was shown (see showSentence).
     return;
   }
   
@@ -184,7 +188,12 @@ function showSentence(index) {
   contentDiv.classList.remove('active');
   
   if (behavior.resume_last_sentence) {
-    localStorage.setItem('nothing_sentence_last_idx', index.toString());
+    // Mark the list "done" (-1) as soon as its final sentence is shown, so a
+    // visitor who simply closes the tab on the last line starts a fresh list
+    // next time instead of being stuck re-reading it. Otherwise store the index
+    // we're on so the next visit resumes here.
+    const isLastSentence = index >= sentences.length - 1;
+    localStorage.setItem(LAST_INDEX_KEY, isLastSentence ? '-1' : index.toString());
   }
   
   // Force a browser reflow to ensure the initial state is rendered before adding active

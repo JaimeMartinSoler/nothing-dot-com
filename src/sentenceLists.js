@@ -5,6 +5,11 @@
 
 export const SHOWN_LISTS_KEY = 'nothing_sentences_shown';
 
+// Storage key for the index of the last sentence shown within the current list,
+// used to resume returning visitors where they left off. A value of -1 means the
+// last list was finished, so the next visit should start a fresh list.
+export const LAST_INDEX_KEY = 'nothing_sentence_last_index';
+
 // Filename (no extension) of a list path, used as its stored alias:
 // './sentences/000001.yaml' -> '000001'. Aliases can be any word, not just digits.
 export function listAlias(path) {
