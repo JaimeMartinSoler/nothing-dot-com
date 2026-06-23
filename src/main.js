@@ -86,7 +86,14 @@ async function loadSentences() {
           }
         }
 
-        markListShown(listAlias(targetPath), allAliases);
+        // Don't re-record on every reload of the same direct link, otherwise a
+        // bookmarked `/000000` would append a duplicate entry to the shown-list
+        // history on each visit and grow it without bound.
+        const targetAlias = listAlias(targetPath);
+        const shown = readShownLists();
+        if (shown[shown.length - 1] !== targetAlias) {
+          markListShown(targetAlias, allAliases);
+        }
         if (behavior.resume_last_sentence) {
           localStorage.setItem(LAST_INDEX_KEY, startIdx.toString());
         }
@@ -145,16 +152,13 @@ async function loadSentences() {
 }
 
 // Initialization: download a selected list, then start the void timer.
-loadSentences()
-  .then((loaded) => {
-    sentences = loaded;
-    setTimeout(() => {
-      wakeUp();
-    }, skipInitialDelay ? 0 : behavior.initial_delay_ms);
-  })
-  .catch(() => {
-    // Nothing left to show — fittingly, the void simply stays empty.
-  });
+// `loadSentences` always resolves (worst case to `[]`), so no rejection to catch.
+loadSentences().then((loaded) => {
+  sentences = loaded;
+  setTimeout(() => {
+    wakeUp();
+  }, skipInitialDelay ? 0 : behavior.initial_delay_ms);
+});
 
 function wakeUp() {
   if (isAwake || sentences.length === 0) return;
