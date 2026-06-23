@@ -11,6 +11,12 @@ behavior:
   # This prevents accidental double-clicks from skipping text you haven't seen.
   cooldown_ms: 300
 
+  # -> When the shown-list history is empty (a first visit, or right after every
+  # list has been seen and the cycle resets), start with the first list (sorted,
+  # e.g. `000000`) instead of a random one. After that, selection is always random.
+  # Set to false to make selection fully random, including on a fresh cycle.
+  start_with_first_list: true
+
 
 # ==============================================================================
 # VISUALS CONFIGURATION
@@ -78,7 +84,7 @@ visuals:
 # CONTENT SCRIPT
 # ==============================================================================
 # The sentences are no longer stored here. They now live as individual YAML
-# lists inside `src/sentences/` (e.g. `sentences-000000.yaml`). On every page
-# load `main.js` picks one list at random (avoiding repeats via localStorage)
-# and lazily downloads ONLY that file. See `src/main.js` for details.
+# lists inside `src/sentences/` (e.g. `000000.yaml`). On every page load
+# `main.js` picks one list at random (avoiding repeats via localStorage) and
+# lazily downloads ONLY that file. See `src/main.js` for details.
 # ==============================================================================

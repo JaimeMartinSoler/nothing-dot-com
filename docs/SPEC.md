@@ -15,7 +15,8 @@ A minimalistic, "low dopamine" web experience that subverts user expectations. T
    - The first sentence explicitly tells the user: "Are you still here? (double tap/click to change language)"
    - **Double-tap/Double-click**: Opens a beautiful, subtle pop-up to explicitly switch the language.
 5. **Content Source**:
-   - All sentences, behaviors (delays/cooldowns), and visuals (fonts, colors, blur amounts, easing curves) are managed in `src/config.yml`.
+   - Behaviors (delays/cooldowns) and visuals (fonts, colors, blur amounts, easing curves) are managed in `src/config.yml`.
+   - Sentences live as individual YAML lists in `src/sentences/` (one file per list, e.g. `000000.yaml`). One list is selected per page load and lazily downloaded; repeats are avoided via `localStorage` until every list has been shown, then the cycle resets. The `start_with_first_list` flag in `src/config.yml` controls whether a fresh cycle begins with the first list or a random one. See `docs/ARCHITECTURE.md` for details.
    - Line breaks are supported by using `\n` in the YAML strings, rendering correctly on the screen.
 
 ## Aesthetic Requirements

@@ -1,4 +1,5 @@
 import data from './config.yml';
+import { listAlias, readShownLists, markListShown, orderedCandidates } from './sentenceLists.js';
 import './style.css';
 
 const { behavior, visuals } = data;
@@ -51,59 +52,41 @@ let tapTimeout;
 // the browser downloads just the one list we end up selecting — this scales to
 // thousands of lists without ever fetching them all to pick one.
 const sentenceLists = import.meta.glob('./sentences/*.yaml');
-const SHOWN_LISTS_KEY = 'nothing_shown_lists';
 
 let sentences = [];
 
-// Extract the suffix alias from a path: './sentences/sentences-000001.yaml' -> '000001'
-function listAlias(path) {
-  const match = path.match(/sentences-([^/.]+)\.yaml$/);
-  return match ? match[1] : path;
-}
-
-function readShownLists() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(SHOWN_LISTS_KEY));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-// Pick a list (by path) at random among those not yet shown to this browser.
-// Once every list has been shown, the history resets and we start over.
-function selectSentenceListPath() {
-  const paths = Object.keys(sentenceLists);
-  if (paths.length === 0) return null;
-
-  let shown = readShownLists();
-  let available = paths.filter((path) => !shown.includes(listAlias(path)));
-
-  if (available.length === 0) {
-    shown = [];
-    available = paths;
-  }
-
-  const chosen = available[Math.floor(Math.random() * available.length)];
-  shown.push(listAlias(chosen));
-  localStorage.setItem(SHOWN_LISTS_KEY, JSON.stringify(shown));
-  return chosen;
-}
-
+// Try candidate lists in order until one's chunk loads. A list is only recorded
+// as "shown" AFTER its chunk resolves, so a flaky network never burns a list the
+// user never saw — and we fall through to another list instead of a blank page.
 async function loadSentences() {
-  const path = selectSentenceListPath();
-  if (!path) return [];
-  const module = await sentenceLists[path]();
-  return Array.isArray(module.default) ? module.default : [];
+  const paths = Object.keys(sentenceLists);
+  const allAliases = paths.map(listAlias);
+  const candidates = orderedCandidates(paths, readShownLists(), behavior.start_with_first_list);
+
+  for (const path of candidates) {
+    try {
+      const module = await sentenceLists[path]();
+      const loaded = Array.isArray(module.default) ? module.default : [];
+      markListShown(listAlias(path), allAliases);
+      return loaded;
+    } catch {
+      // Chunk failed to load; try the next candidate.
+    }
+  }
+  return [];
 }
 
-// Initialization: download the selected list, then start the void timer.
-loadSentences().then((loaded) => {
-  sentences = loaded;
-  setTimeout(() => {
-    wakeUp();
-  }, behavior.initial_delay_ms);
-});
+// Initialization: download a selected list, then start the void timer.
+loadSentences()
+  .then((loaded) => {
+    sentences = loaded;
+    setTimeout(() => {
+      wakeUp();
+    }, behavior.initial_delay_ms);
+  })
+  .catch(() => {
+    // Nothing left to show — fittingly, the void simply stays empty.
+  });
 
 function wakeUp() {
   if (isAwake || sentences.length === 0) return;
