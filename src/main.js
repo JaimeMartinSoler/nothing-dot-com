@@ -1,6 +1,5 @@
 import data from './config.yml';
 import { listAlias, readShownLists, markListShown, orderedCandidates, LAST_INDEX_KEY } from './sentenceLists.js';
-import './style.css';
 
 const { behavior, visuals } = data;
 
