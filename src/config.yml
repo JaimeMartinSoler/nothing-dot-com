@@ -5,7 +5,7 @@
 # ==============================================================================
 behavior:
   # -> How long the user stares at the blank void before the first text appears.
-  initial_delay_ms: 3000
+  initial_delay_ms: 5000
   
   # -> Minimum time (in milliseconds) a sentence must be on screen before it can be skipped.
   # This prevents accidental double-clicks from skipping text you haven't seen.
@@ -20,7 +20,7 @@ behavior:
   # -> If true, returning users will resume from the exact list and sentence they left off.
   # When they finish a list, the next visit will start a fresh list.
   # If false, every visit loads a new list from the beginning.
-  resume_last_sentence: true
+  resume_last_sentence: false
 
 
 # ==============================================================================
@@ -83,13 +83,3 @@ visuals:
   # -> Injects into --exit-easing in style.css.
   # Using 'ease-out' here instead of an 'ease-in' so the blur and fade start reacting instantly to your click.
   exit_easing: "ease-out"
-
-
-# ==============================================================================
-# CONTENT SCRIPT
-# ==============================================================================
-# The sentences are no longer stored here. They now live as individual YAML
-# lists inside `src/sentences/` (e.g. `000000.yaml`). On every page load
-# `main.js` picks one list at random (avoiding repeats via localStorage) and
-# lazily downloads ONLY that file. See `src/main.js` for details.
-# ==============================================================================
