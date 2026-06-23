@@ -1,7 +1,8 @@
 import data from './config.yml';
+import { listAlias, readShownLists, markListShown, orderedCandidates } from './sentenceLists.js';
 import './style.css';
 
-const { behavior, visuals, sentences } = data;
+const { behavior, visuals } = data;
 
 // Apply visual config
 const root = document.documentElement;
@@ -46,13 +47,49 @@ let isTransitioning = false;
 let lastTap = 0;
 let tapTimeout;
 
-// Initialization: start the void timer
-setTimeout(() => {
-  wakeUp();
-}, behavior.initial_delay_ms);
+// Sentence lists are discovered lazily. `import.meta.glob` (non-eager) bakes ONLY
+// the file paths into the main bundle and emits each list as a separate chunk, so
+// the browser downloads just the one list we end up selecting — this scales to
+// thousands of lists without ever fetching them all to pick one.
+const sentenceLists = import.meta.glob('./sentences/*.yaml');
+
+let sentences = [];
+
+// Try candidate lists in order until one's chunk loads. A list is only recorded
+// as "shown" AFTER its chunk resolves, so a flaky network never burns a list the
+// user never saw — and we fall through to another list instead of a blank page.
+async function loadSentences() {
+  const paths = Object.keys(sentenceLists);
+  const allAliases = paths.map(listAlias);
+  const candidates = orderedCandidates(paths, readShownLists(), behavior.start_with_first_list);
+
+  for (const path of candidates) {
+    try {
+      const module = await sentenceLists[path]();
+      const loaded = Array.isArray(module.default) ? module.default : [];
+      markListShown(listAlias(path), allAliases);
+      return loaded;
+    } catch {
+      // Chunk failed to load; try the next candidate.
+    }
+  }
+  return [];
+}
+
+// Initialization: download a selected list, then start the void timer.
+loadSentences()
+  .then((loaded) => {
+    sentences = loaded;
+    setTimeout(() => {
+      wakeUp();
+    }, behavior.initial_delay_ms);
+  })
+  .catch(() => {
+    // Nothing left to show — fittingly, the void simply stays empty.
+  });
 
 function wakeUp() {
-  if (isAwake) return;
+  if (isAwake || sentences.length === 0) return;
   isAwake = true;
   showSentence(currentIndex);
 }

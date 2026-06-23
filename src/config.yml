@@ -11,6 +11,12 @@ behavior:
   # This prevents accidental double-clicks from skipping text you haven't seen.
   cooldown_ms: 300
 
+  # -> When the shown-list history is empty (a first visit, or right after every
+  # list has been seen and the cycle resets), start with the first list (sorted,
+  # e.g. `000000`) instead of a random one. After that, selection is always random.
+  # Set to false to make selection fully random, including on a fresh cycle.
+  start_with_first_list: true
+
 
 # ==============================================================================
 # VISUALS CONFIGURATION
@@ -77,37 +83,8 @@ visuals:
 # ==============================================================================
 # CONTENT SCRIPT
 # ==============================================================================
-# The sequence of messages the user will see. 
-# The system supports multiple languages (currently en/es).
+# The sentences are no longer stored here. They now live as individual YAML
+# lists inside `src/sentences/` (e.g. `000000.yaml`). On every page load
+# `main.js` picks one list at random (avoiding repeats via localStorage) and
+# lazily downloads ONLY that file. See `src/main.js` for details.
 # ==============================================================================
-sentences:
-
-  - en: "Are you still here?\n(double tap/click to change language)"
-    es: "¿Sigues aquí?\n(toca/haz click dos veces para cambiar de idioma)"
-
-  - en: "Are you dumb?"
-    es: "¿Eres tonto?"
-
-  - en: "Did you check the name of the website?"
-    es: "¿Te has fijado en el nombre de la web?"
-
-  - en: "This is nothing..."
-    es: "Esto es la nada..."
-
-  - en: "There is no content here"
-    es: "Aquí no hay contenido"
-
-  - en: "Seriously, what are you waiting for?"
-    es: "En serio, ¿qué estás esperando?"
-
-  - en: "A reward?"
-    es: "¿Una recompensa?"
-
-  - en: "There are no rewards in nothingness"
-    es: "No hay recompensas en la nada"
-
-  - en: "Just close the tab"
-    es: "Simplemente cierra la pestaña"
-
-  - en: "Or keep clicking. It's your time"
-    es: "O sigue haciendo clic. Es tu tiempo"
