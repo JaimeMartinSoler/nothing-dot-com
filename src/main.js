@@ -55,6 +55,10 @@ const sentenceLists = import.meta.glob('./sentences/*.yaml');
 
 let sentences = [];
 
+// Set when a path override pins both a list AND an index, so init can render it
+// immediately instead of forcing the checker through the full initial delay.
+let skipInitialDelay = false;
+
 // Try candidate lists in order until one's chunk loads. A list is only recorded
 // as "shown" AFTER its chunk resolves, so a flaky network never burns a list the
 // user never saw — and we fall through to another list instead of a blank page.
@@ -67,25 +71,27 @@ async function loadSentences() {
   if (pathParts.length > 0) {
     const listName = pathParts[0];
     const targetPath = paths.find(p => listAlias(p) === listName);
-    
+
     if (targetPath) {
       try {
         const module = await sentenceLists[targetPath]();
         const loaded = Array.isArray(module.default) ? module.default : [];
-        
+
         let startIdx = 0;
         if (pathParts.length > 1) {
           const parsedIdx = parseInt(pathParts[1], 10);
           if (!isNaN(parsedIdx) && parsedIdx >= 0 && parsedIdx < loaded.length) {
             startIdx = parsedIdx;
+            // An explicit list + index is a "check this now" link — skip the void delay.
+            skipInitialDelay = true;
           }
         }
-        
+
         markListShown(listAlias(targetPath), allAliases);
         if (behavior.resume_last_sentence) {
           localStorage.setItem(LAST_INDEX_KEY, startIdx.toString());
         }
-        
+
         currentIndex = startIdx;
         return loaded;
       } catch {
@@ -145,7 +151,7 @@ loadSentences()
     sentences = loaded;
     setTimeout(() => {
       wakeUp();
-    }, behavior.initial_delay_ms);
+    }, skipInitialDelay ? 0 : behavior.initial_delay_ms);
   })
   .catch(() => {
     // Nothing left to show — fittingly, the void simply stays empty.
