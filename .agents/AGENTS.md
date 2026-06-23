@@ -10,7 +10,7 @@ This is "nothing-dot-com", an anti-dopamine, highly minimalist, slightly antagon
 4. **Testing**: Use Node.js built-in test runner (`node --test`), avoiding heavy test frameworks like vitest or jest.
 5. **Vibe Coding**: The user expects to explore different visual effects. When modifying the code to add a new transition, explain the "vibe" of the transition (e.g., "This adds a deep cinematic blur that slowly comes into focus"). Try out different things when asked to show options.
 6. **No Clutter**: Do not add unnecessary comments, logs, or boilerplate. Keep the codebase as stark as the website itself.
-7. **YAML Config**: The text content, timing behavior, and ALL visual configurations (colors, fonts, animation timings, easing curves) must be stored in `config.yml`. This allows the site to be fully customized without touching JS/CSS source code.
+7. **YAML Config**: The timing behavior and ALL visual configurations (colors, fonts, animation timings, easing curves) must be stored in `config.yml`. Sentence text content lives in its own per-list files under `src/sentences/` (e.g. `000000.yaml`), one list per file. This allows the site to be fully customized without touching JS/CSS source code.
 
 ## Development Workflow (every new request, unless told otherwise)
 1. **Verify the branch.** The base for new work is `develop`. If the current
