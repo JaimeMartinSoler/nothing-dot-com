@@ -7,8 +7,10 @@ behavior:
   # -> How long the user stares at the blank void before the first text appears.
   initial_delay_ms: 5000
   
-  # -> Minimum time (in milliseconds) a sentence must be on screen before it can be skipped.
-  # This prevents accidental double-clicks from skipping text you haven't seen.
+  # -> Minimum time (in milliseconds) before the next click is accepted, applied
+  # both when a full sentence appears and when a progressive sub-sentence part is
+  # revealed. This prevents accidental double-clicks from skipping (or revealing)
+  # text you haven't seen yet.
   cooldown_ms: 300
 
   # -> When the shown-list history is empty (a first visit, or right after every

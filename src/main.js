@@ -1,5 +1,6 @@
 import data from './config.yml';
 import { listAlias, readShownLists, markListShown, orderedCandidates, LAST_INDEX_KEY } from './sentenceLists.js';
+import { hasNextSubSentence, clampSubIndex } from './subSentences.js';
 
 const { behavior, visuals } = data;
 
@@ -204,9 +205,30 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Render a sentence's content into `contentDiv`. Arrays are progressively
+// revealed: every part is rendered up front so the layout never shifts, but parts
+// after `subIndex` start hidden and fade in on later clicks. Plain strings render
+// as-is. Shared by `showSentence` and `setLanguage` so both stay in sync.
+function renderSentenceContent(sentenceData, subIndex) {
+  if (Array.isArray(sentenceData)) {
+    contentDiv.innerHTML = '';
+    sentenceData.forEach((part, i) => {
+      const span = document.createElement('span');
+      span.textContent = part;
+      span.classList.add('sub-sentence');
+      if (i > subIndex) {
+        span.classList.add('hidden');
+      }
+      contentDiv.appendChild(span);
+    });
+  } else {
+    contentDiv.textContent = sentenceData;
+  }
+}
+
 function nextSentence() {
   const sentenceData = sentences[currentIndex][currentLanguage];
-  if (Array.isArray(sentenceData) && currentSubIndex < sentenceData.length - 1) {
+  if (hasNextSubSentence(sentenceData, currentSubIndex)) {
     currentSubIndex++;
     isTransitioning = true;
     
@@ -260,22 +282,8 @@ function showSentence(index) {
   // Force a browser reflow to ensure the initial state is rendered before adding active
   void contentDiv.offsetWidth;
   
-  const sentenceData = sentences[index][currentLanguage];
-  if (Array.isArray(sentenceData)) {
-    contentDiv.innerHTML = '';
-    sentenceData.forEach((part, i) => {
-      const span = document.createElement('span');
-      span.textContent = part;
-      span.classList.add('sub-sentence');
-      if (i > currentSubIndex) {
-        span.classList.add('hidden');
-      }
-      contentDiv.appendChild(span);
-    });
-  } else {
-    contentDiv.textContent = sentenceData;
-  }
-  
+  renderSentenceContent(sentences[index][currentLanguage], currentSubIndex);
+
   // Add active class to trigger the smooth fade in
   contentDiv.classList.add('active');
   
@@ -321,22 +329,10 @@ function setLanguage(lang) {
   localStorage.setItem('nothing_lang', lang);
   hideLanguageModal();
   if (isAwake) {
-    // Update the text immediately without re-triggering animations
+    // Update the text immediately without re-triggering animations. Clamp the
+    // sub-index in case the new language has fewer parts than the old one.
     const sentenceData = sentences[currentIndex][currentLanguage];
-    if (Array.isArray(sentenceData)) {
-      currentSubIndex = Math.min(currentSubIndex, Math.max(0, sentenceData.length - 1));
-      contentDiv.innerHTML = '';
-      sentenceData.forEach((part, i) => {
-        const span = document.createElement('span');
-        span.textContent = part;
-        span.classList.add('sub-sentence');
-        if (i > currentSubIndex) {
-          span.classList.add('hidden');
-        }
-        contentDiv.appendChild(span);
-      });
-    } else {
-      contentDiv.textContent = sentenceData;
-    }
+    currentSubIndex = clampSubIndex(sentenceData, currentSubIndex);
+    renderSentenceContent(sentenceData, currentSubIndex);
   }
 }
