@@ -1,7 +1,9 @@
 import data from './config.yml';
 import { listAlias, readShownLists, markListShown, orderedCandidates, LAST_INDEX_KEY } from './sentenceLists.js';
+import { hasNextSubSentence, clampSubIndex } from './subSentences.js';
+import { resolveSubtitleText, shouldShowSubtitle, resolveExtraDelayMs } from './subtitle.js';
 
-const { behavior, visuals } = data;
+const { behavior, visuals, subtitle } = data;
 
 // Apply visual config
 const root = document.documentElement;
@@ -23,6 +25,13 @@ if (visuals) {
   if (visuals.exit_easing) root.style.setProperty('--exit-easing', visuals.exit_easing);
 }
 
+if (subtitle) {
+  if (subtitle.text_color) root.style.setProperty('--sub-text-color', subtitle.text_color);
+  if (subtitle.font_family) root.style.setProperty('--sub-font-family', subtitle.font_family);
+  if (subtitle.font_size) root.style.setProperty('--sub-font-size', subtitle.font_size);
+  if (subtitle.font_weight) root.style.setProperty('--sub-font-weight', subtitle.font_weight);
+}
+
 function parseDurationMs(str) {
   if (!str) return 0;
   if (str.endsWith('ms')) return parseFloat(str);
@@ -34,13 +43,17 @@ const enterDurationMs = visuals?.enter_duration ? parseDurationMs(visuals.enter_
 const exitDurationMs = visuals?.exit_duration ? parseDurationMs(visuals.exit_duration) : 1500;
 
 const contentDiv = document.getElementById('content');
+const subtitleDiv = document.getElementById('subtitle');
 const languageModal = document.getElementById('language-modal');
 const btnEn = document.getElementById('btn-en');
 const btnEs = document.getElementById('btn-es');
 
+let subtitleTimeout;
+
 // Infer language based on local storage or browser preference
 let currentLanguage = localStorage.getItem('nothing_lang') || (navigator.language.startsWith('es') ? 'es' : 'en');
 let currentIndex = 0;
+let currentSubIndex = 0;
 let isAwake = false;
 let isTransitioning = false;
 let lastTap = 0;
@@ -203,7 +216,45 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Render a sentence's content into `contentDiv`. Arrays are progressively
+// revealed: every part is rendered up front so the layout never shifts, but parts
+// after `subIndex` start hidden and fade in on later clicks. Plain strings render
+// as-is. Shared by `showSentence` and `setLanguage` so both stay in sync.
+function renderSentenceContent(sentenceData, subIndex) {
+  if (Array.isArray(sentenceData)) {
+    contentDiv.innerHTML = '';
+    sentenceData.forEach((part, i) => {
+      const span = document.createElement('span');
+      span.textContent = part;
+      span.classList.add('sub-sentence');
+      if (i > subIndex) {
+        span.classList.add('hidden');
+      }
+      contentDiv.appendChild(span);
+    });
+  } else {
+    contentDiv.textContent = sentenceData;
+  }
+}
+
 function nextSentence() {
+  const sentenceData = sentences[currentIndex][currentLanguage];
+  if (hasNextSubSentence(sentenceData, currentSubIndex)) {
+    currentSubIndex++;
+    isTransitioning = true;
+    
+    const spans = contentDiv.querySelectorAll('.sub-sentence');
+    if (spans[currentSubIndex]) {
+      spans[currentSubIndex].classList.remove('hidden');
+    }
+    
+    setTimeout(() => {
+      isTransitioning = false;
+    }, behavior.cooldown_ms);
+    
+    return;
+  }
+
   if (currentIndex >= sentences.length - 1) {
     // At the end — do nothing, let them keep clicking. The list was already
     // marked "done" when the final sentence was shown (see showSentence).
@@ -213,9 +264,16 @@ function nextSentence() {
   currentIndex++;
   isTransitioning = true;
   
+  clearTimeout(subtitleTimeout);
+  
   // Trigger exit animation
   contentDiv.classList.remove('active');
   contentDiv.classList.add('exit');
+  
+  subtitleDiv.classList.remove('active');
+  if (subtitleDiv.textContent) {
+    subtitleDiv.classList.add('exit');
+  }
   
   // Wait for exit animation to complete, then show next
   setTimeout(() => {
@@ -227,6 +285,13 @@ function showSentence(index) {
   // Reset classes
   contentDiv.classList.remove('exit');
   contentDiv.classList.remove('active');
+  
+  subtitleDiv.classList.remove('exit');
+  subtitleDiv.classList.remove('active');
+  subtitleDiv.textContent = '';
+  clearTimeout(subtitleTimeout);
+  
+  currentSubIndex = 0;
   
   if (behavior.resume_last_sentence) {
     // Mark the list "done" (-1) as soon as its final sentence is shown, so a
@@ -240,8 +305,20 @@ function showSentence(index) {
   // Force a browser reflow to ensure the initial state is rendered before adding active
   void contentDiv.offsetWidth;
   
-  contentDiv.textContent = sentences[index][currentLanguage];
-  
+  renderSentenceContent(sentences[index][currentLanguage], currentSubIndex);
+
+  if (shouldShowSubtitle(subtitle, index, readShownLists())) {
+    const text = resolveSubtitleText(subtitle, currentLanguage);
+    if (text) {
+      subtitleDiv.textContent = text;
+      subtitleTimeout = setTimeout(() => {
+        if (currentIndex === 0 && !contentDiv.classList.contains('exit')) {
+          subtitleDiv.classList.add('active');
+        }
+      }, resolveExtraDelayMs(subtitle));
+    }
+  }
+
   // Add active class to trigger the smooth fade in
   contentDiv.classList.add('active');
   
@@ -287,7 +364,15 @@ function setLanguage(lang) {
   localStorage.setItem('nothing_lang', lang);
   hideLanguageModal();
   if (isAwake) {
-    // Update the text immediately without re-triggering animations
-    contentDiv.textContent = sentences[currentIndex][currentLanguage];
+    // Update the text immediately without re-triggering animations. Clamp the
+    // sub-index in case the new language has fewer parts than the old one.
+    const sentenceData = sentences[currentIndex][currentLanguage];
+    currentSubIndex = clampSubIndex(sentenceData, currentSubIndex);
+    renderSentenceContent(sentenceData, currentSubIndex);
+    
+    if (currentIndex === 0 && subtitleDiv.textContent) {
+      const text = resolveSubtitleText(subtitle, currentLanguage);
+      if (text) subtitleDiv.textContent = text;
+    }
   }
 }

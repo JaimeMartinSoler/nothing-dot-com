@@ -4,13 +4,13 @@
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-size: 2.5rem;
   --font-weight: 200;
-  
+
   --blur-amount: 12px;
   --zoom-amount: 0.9;
-  
+
   --exit-blur-amount: 6px;
   --exit-zoom-amount: 1.05;
-  
+
   --enter-duration: 4s;
   --enter-easing: cubic-bezier(0.25, 1, 0.5, 1);
   --exit-duration: 1.5s;
@@ -21,7 +21,8 @@
   box-sizing: border-box;
 }
 
-body, html {
+body,
+html {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -41,9 +42,17 @@ body, html {
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
+}
+
+#subtitle {
+  color: var(--sub-text-color, var(--text-color));
+  font-family: var(--sub-font-family, var(--font-family));
+  font-size: var(--sub-font-size, calc(var(--font-size) * 0.8));
+  font-weight: var(--sub-font-weight, var(--font-weight));
 }
 
 /* Typography and Transition */
@@ -55,17 +64,17 @@ body, html {
   max-width: 80%;
   line-height: 1.4;
   white-space: pre-line;
-  
+
   /* Initial state: The Void */
   opacity: 0;
   filter: blur(var(--blur-amount));
   transform: scale(var(--zoom-amount));
   pointer-events: none;
-  
+
   /* Very slow, cinematic entrance */
-  transition: opacity var(--enter-duration) var(--enter-easing), 
-              filter var(--enter-duration) var(--enter-easing),
-              transform var(--enter-duration) var(--enter-easing);
+  transition: opacity var(--enter-duration) var(--enter-easing),
+    filter var(--enter-duration) var(--enter-easing),
+    transform var(--enter-duration) var(--enter-easing);
 }
 
 .sentence.active {
@@ -80,8 +89,22 @@ body, html {
   transform: scale(var(--exit-zoom-amount));
   /* Exit transition */
   transition: opacity var(--exit-duration) var(--exit-easing),
-              filter var(--exit-duration) var(--exit-easing),
-              transform var(--exit-duration) var(--exit-easing);
+    filter var(--exit-duration) var(--exit-easing),
+    transform var(--exit-duration) var(--exit-easing);
+}
+
+.sub-sentence {
+  opacity: 1;
+  filter: blur(0px);
+  transition: opacity var(--enter-duration) var(--enter-easing),
+    filter var(--enter-duration) var(--enter-easing);
+}
+
+.sub-sentence.hidden {
+  opacity: 0;
+  filter: blur(var(--blur-amount));
+  /* pointer-events: none is not strictly necessary but keeps interactions clean */
+  pointer-events: none;
 }
 
 /* Modal styling */
@@ -91,7 +114,7 @@ body, html {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(3, 3, 3, 0.85);
+  background: rgba(3, 3, 3, 0.95);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   display: flex;
