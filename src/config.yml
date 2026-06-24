@@ -91,11 +91,11 @@ visuals:
 # ==============================================================================
 subtitle:
   sentence:
-    en: "\n\n(tap/click to continue)\n(double tap/click anytime for language)"
-    es: "\n\n(toca/click para continuar)\n(doble toque/click para idioma cuando quieras)"
+    en: "\n(tap/click to continue)\n(double tap/click anytime for language)"
+    es: "\n(toca/click para continuar)\n(doble toque/click para idioma cuando quieras)"
   extra_delay_ms: 2000
   show_only_first_time: true
   text_color: null
   font_family: null
-  font_size: "1.2rem"
+  font_size: "1.5rem"
   font_weight: null
