@@ -84,6 +84,20 @@ body, html {
               transform var(--exit-duration) var(--exit-easing);
 }
 
+.sub-sentence {
+  opacity: 1;
+  filter: blur(0px);
+  transition: opacity var(--enter-duration) var(--enter-easing),
+              filter var(--enter-duration) var(--enter-easing);
+}
+
+.sub-sentence.hidden {
+  opacity: 0;
+  filter: blur(var(--blur-amount));
+  /* pointer-events: none is not strictly necessary but keeps interactions clean */
+  pointer-events: none;
+}
+
 /* Modal styling */
 .modal {
   position: absolute;
