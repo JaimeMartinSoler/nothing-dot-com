@@ -1,6 +1,7 @@
 import data from './config.yml';
 import { listAlias, readShownLists, markListShown, orderedCandidates, LAST_INDEX_KEY } from './sentenceLists.js';
 import { hasNextSubSentence, clampSubIndex } from './subSentences.js';
+import { resolveSubtitleText, shouldShowSubtitle, resolveExtraDelayMs } from './subtitle.js';
 
 const { behavior, visuals, subtitle } = data;
 
@@ -306,16 +307,15 @@ function showSentence(index) {
   
   renderSentenceContent(sentences[index][currentLanguage], currentSubIndex);
 
-  if (subtitle && index === 0) {
-    const shown = readShownLists();
-    const isFirstTime = shown.length <= 1;
-    if (!subtitle.show_only_first_time || isFirstTime) {
-      subtitleDiv.textContent = subtitle.sentence[currentLanguage];
+  if (shouldShowSubtitle(subtitle, index, readShownLists())) {
+    const text = resolveSubtitleText(subtitle, currentLanguage);
+    if (text) {
+      subtitleDiv.textContent = text;
       subtitleTimeout = setTimeout(() => {
         if (currentIndex === 0 && !contentDiv.classList.contains('exit')) {
           subtitleDiv.classList.add('active');
         }
-      }, subtitle.extra_delay_ms || 2000);
+      }, resolveExtraDelayMs(subtitle));
     }
   }
 
@@ -370,8 +370,9 @@ function setLanguage(lang) {
     currentSubIndex = clampSubIndex(sentenceData, currentSubIndex);
     renderSentenceContent(sentenceData, currentSubIndex);
     
-    if (subtitle && currentIndex === 0 && subtitleDiv.textContent) {
-      subtitleDiv.textContent = subtitle.sentence[currentLanguage];
+    if (currentIndex === 0 && subtitleDiv.textContent) {
+      const text = resolveSubtitleText(subtitle, currentLanguage);
+      if (text) subtitleDiv.textContent = text;
     }
   }
 }
