@@ -25,5 +25,5 @@
 - en: "Just close the tab"
   es: "Simplemente cierra la pestaña"
 
-- en: "Or keep clicking. It's your time"
-  es: "O sigue haciendo click. Es tu tiempo"
+- en: ["Or keep clicking.", " It's your time"]
+  es: ["O sigue haciendo click.", " Es tu tiempo"]

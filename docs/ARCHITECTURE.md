@@ -12,6 +12,7 @@
 - `/src/config.yml`: The source of truth for app configuration (like the initial delay and cooldown delay) and `visuals`. Sentences no longer live here.
 - `/src/sentences/`: One YAML list of sentences per file (`000000.yaml`, `000001.yaml`, ...). The filename (sans extension) is the list's stored alias. One list is selected per page load.
 - `/src/sentenceLists.js`: Pure, DOM-free selection logic (alias parsing, repetition tracking, candidate ordering). Tested using Node's built-in test runner (`node --test`).
+- `/src/subSentences.js`: Pure, DOM-free helpers for the progressive sub-sentence reveal (normalizing a value to parts, deciding whether a further part remains, clamping the sub-index on a language switch). Kept out of `main.js` so it can be unit tested in isolation.
 
 ## Core Mechanisms
 - **YAML Parsing & CSS Injection**: Uses `@modyfi/vite-plugin-yaml` to parse `config.yml`. `main.js` then reads the `visuals` block and dynamically injects them as CSS Custom Properties (`--bg-color`, `--blur-amount`, etc.) onto the document's `:root`.
@@ -21,9 +22,12 @@
 - **Event Handling**:
   - Global `click`, `touchstart`, `keydown` (Space, Enter) listeners.
   - Custom double-tap logic (measuring time between clicks/taps) since native `dblclick` can be inconsistent on mobile.
+- **Progressive Sub-sentences**:
+  - A sentence's per-language value may be an array of strings instead of a single string. The parts are rendered as sibling `<span class="sub-sentence">` elements *all at once*, but every part after the current sub-index carries the `hidden` class, so it is present in the layout yet invisible (`opacity: 0` + blur). Revealing the next part just removes `hidden` from one span, which fades it in via CSS without reflowing the text already on screen.
+  - `nextSentence` first checks `hasNextSubSentence`: if a part remains it reveals it and stops; only once all parts are shown does it run the normal exit/advance flow. `currentSubIndex` tracks how many parts are revealed and resets to 0 in `showSentence`. `renderSentenceContent` is shared by `showSentence` and `setLanguage` so both paths build the spans identically; switching language mid-sentence clamps the sub-index via `clampSubIndex` so a shorter translation never indexes past its last part.
 - **Cooldown Logic**:
   - `let isTransitioning = false;`
-  - On input, if `isTransitioning`, ignore. Otherwise, trigger transition, set to `true`, and use `setTimeout` to unlock after 1000ms.
+  - On input, if `isTransitioning`, ignore. Otherwise, trigger the transition, set it to `true`, and use `setTimeout` to unlock after `cooldown_ms`. This guard applies both to advancing to the next sentence and to revealing the next sub-sentence part.
 - **Animations**:
   - Managed via CSS classes toggled by JS. For example, `.sentence-enter`, `.sentence-active`, `.sentence-exit`.
   - Advanced CSS transitions/animations for opacity, transforms, and filters (blur).
@@ -33,4 +37,5 @@
 We avoid heavy UI libraries. The UI relies entirely on Vanilla CSS:
 - Advanced aesthetics via `filter: blur()`, `transform: scale()`, and configurable `cubic-bezier()` easing.
 - **Newlines**: The `.sentence` element uses `white-space: pre-line;` to natively respect `\n` characters injected from the YAML file while remaining secure from XSS.
+- **Sub-sentences**: Each part is a `.sub-sentence` span whose text is set via `textContent` (never `innerHTML`), keeping the DOM-injection path XSS-safe. The `.sub-sentence.hidden` rule drives the per-part fade-in (opacity + blur, plus `pointer-events: none`) without using `display:none`, so revealing a part never shifts the surrounding layout.
 - All styles consume the CSS Custom Properties injected by `main.js` during initialization. CSS is included in the `<head>` to make it render-blocking, preventing any Flash of Unstyled Content (FOUC).
