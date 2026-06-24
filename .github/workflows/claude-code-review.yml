@@ -8,6 +8,9 @@ on:
     #   - "src/**/*.ts"
     #   - "src/**/*.tsx"
 
+env:
+  CLAUDE_MODEL_DEFAULT: "opus" # haiku, sonnet, opus, fable
+
 jobs:
   claude-review:
     runs-on: ubuntu-latest
@@ -22,6 +25,51 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 1
+
+      - name: Fetch available Claude models
+        id: claude_models
+        continue-on-error: true
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          set +e
+          RESPONSE=$(curl -sS -m 15 "https://api.anthropic.com/v1/models?limit=1000" \
+            -H "Authorization: Bearer ${CLAUDE_CODE_OAUTH_TOKEN}" \
+            -H "anthropic-version: 2023-06-01")
+          MODELS_JSON=$(printf '%s' "$RESPONSE" | jq -c '[.data[].id]' 2>/dev/null)
+          if [ -z "$MODELS_JSON" ] || [ "$MODELS_JSON" = "null" ]; then
+            MODELS_JSON="[]"
+          fi
+          echo "CLAUDE_MODELS=$MODELS_JSON"
+          {
+            echo "models<<EOF_MODELS"
+            echo "$MODELS_JSON"
+            echo "EOF_MODELS"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Resolve CLAUDE_MODEL
+        id: resolve_model
+        env:
+          CLAUDE_MODEL_RAW: ${{ env.CLAUDE_MODEL_DEFAULT }}
+          CLAUDE_MODELS_JSON: ${{ steps.claude_models.outputs.models }}
+        run: |
+          MODELS_JSON="${CLAUDE_MODELS_JSON:-[]}"
+          CLAUDE_MODEL=$(printf '%s' "$MODELS_JSON" | jq -r --arg raw "$CLAUDE_MODEL_RAW" '
+            [.[] | select(ascii_downcase | contains($raw | ascii_downcase))]
+            | sort
+            | last // ""
+          ')
+
+          # No match in the live list (API call failed, or nothing contains the
+          # substring) - fall back to the raw text itself. Claude Code's CLI
+          # accepts short aliases ("opus", "sonnet", "haiku") as well as full
+          # model ids, so this still works in most cases.
+          if [ -z "$CLAUDE_MODEL" ] || [ "$CLAUDE_MODEL" = "null" ]; then
+            CLAUDE_MODEL="$CLAUDE_MODEL_RAW"
+          fi
+
+          echo "CLAUDE_MODEL=$CLAUDE_MODEL"
+          echo "model=$CLAUDE_MODEL" >> "$GITHUB_OUTPUT"
 
       - name: Run Claude Code Review
         id: claude-review
@@ -42,4 +90,5 @@ jobs:
 
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.claude.com/en/docs/claude-code/sdk#command-line for available options
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          claude_args: >-
+            ${{ steps.resolve_model.outputs.model != '' && format('--model {0} ', steps.resolve_model.outputs.model) || '' }}--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"
