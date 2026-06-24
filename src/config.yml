@@ -85,3 +85,17 @@ visuals:
   # -> Injects into --exit-easing in style.css.
   # Using 'ease-out' here instead of an 'ease-in' so the blur and fade start reacting instantly to your click.
   exit_easing: "ease-out"
+
+# ==============================================================================
+# SUBTITLE CONFIGURATION
+# ==============================================================================
+subtitle:
+  sentence:
+    en: "\n\n(tap/click to continue)\n(double tap/click anytime for language)"
+    es: "\n\n(toca/click para continuar)\n(doble toque/click para idioma cuando quieras)"
+  extra_delay_ms: 2000
+  show_only_first_time: true
+  text_color: null
+  font_family: null
+  font_size: "1.2rem"
+  font_weight: null
