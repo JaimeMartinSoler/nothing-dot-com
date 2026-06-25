@@ -17,7 +17,7 @@ A minimalistic, "low dopamine" web experience that subverts user expectations. T
    - **Double-tap/Double-click**: Opens a beautiful, subtle pop-up to explicitly switch the language.
 5. **Content Source & Progress**:
    - Behaviors (delays/cooldowns) and visuals (fonts, colors, blur amounts, easing curves) are managed in `src/config.yml`.
-   - Sentences live as individual YAML lists in `src/sentences/` (one file per list, e.g. `000000.yaml`). One list is selected per page load and lazily downloaded.
+   - Sentences live as individual YAML lists in `src/sentences/` (one file per list, e.g. `000.yaml`). One list is selected per page load and lazily downloaded.
    - Each sentence provides text per language (`en`/`es`). A language value is either a plain string (shown all at once) or an array of strings — the parts of a progressive sub-sentence, revealed one click at a time (e.g. `["Or keep clicking.", " It's your time"]`).
    - **Persistent Progress**: Repeats are avoided via `localStorage` until every list has been shown, then the cycle resets. The `start_with_first_list` flag in `config.yml` controls whether a fresh cycle begins with the first list or a random one. Returning users resume from the exact list and sentence they left off (controlled by `resume_last_sentence` flag).
    - Line breaks are supported by using `\n` in the YAML strings, rendering correctly on the screen.

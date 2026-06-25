@@ -1,7 +1,7 @@
-// Pure, DOM-free logic for the optional configurable subtitle. The `subtitle`
-// block in config.yml is entirely optional: if it (or its `sentence`) is absent,
-// or it has no entry for the active language, the site renders normally with no
-// subtitle. Kept out of main.js (which touches the DOM at import time) so the
+// Pure, DOM-free logic for the optional configurable subtitle. The `subtitle-begin`
+// and `subtitle-end` blocks in config.yml are entirely optional: if absent,
+// or missing a `sentence` map, the site renders normally with no subtitle.
+// Kept out of main.js (which touches the DOM at import time) so the
 // decision logic can be unit tested in isolation.
 
 // No extra delay by default: an explicit `extra_delay_ms: 0` shows the subtitle as
@@ -18,11 +18,12 @@ export function resolveSubtitleText(subtitle, language) {
   return typeof text === 'string' ? text : null;
 }
 
-// Whether the subtitle should be shown for the given sentence index and history.
-// Only ever shown on the first sentence (index 0); `show_only_first_time` further
+// Whether the subtitle should be shown for the current state and history.
+// `isTargetIndex` is true if we are at the target sentence (e.g. index 0 for beginning, 
+// last index for ending). `show_only_first_time` further
 // limits it to the first cycle (shown-list history of length <= 1).
-export function shouldShowSubtitle(subtitle, index, shownLists) {
-  if (!subtitle || index !== 0) return false;
+export function shouldShowSubtitle(subtitle, isTargetIndex, shownLists) {
+  if (!subtitle || !isTargetIndex) return false;
   if (!subtitle.show_only_first_time) return true;
   const shown = Array.isArray(shownLists) ? shownLists : [];
   return shown.length <= 1;

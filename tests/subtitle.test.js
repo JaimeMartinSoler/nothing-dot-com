@@ -38,29 +38,29 @@ describe('resolveSubtitleText', () => {
 
 describe('shouldShowSubtitle', () => {
   it('is false when the subtitle block is absent', () => {
-    assert.equal(shouldShowSubtitle(undefined, 0, []), false);
+    assert.equal(shouldShowSubtitle(undefined, true, []), false);
   });
 
-  it('is false for any sentence other than the first', () => {
-    assert.equal(shouldShowSubtitle(fullSubtitle, 1, []), false);
+  it('is false when not at the target index', () => {
+    assert.equal(shouldShowSubtitle(fullSubtitle, false, []), false);
   });
 
   it('shows on the first cycle when `show_only_first_time` is set', () => {
-    assert.equal(shouldShowSubtitle(fullSubtitle, 0, []), true);
-    assert.equal(shouldShowSubtitle(fullSubtitle, 0, ['000000']), true);
+    assert.equal(shouldShowSubtitle(fullSubtitle, true, []), true);
+    assert.equal(shouldShowSubtitle(fullSubtitle, true, ['000']), true);
   });
 
   it('hides on later cycles when `show_only_first_time` is set', () => {
-    assert.equal(shouldShowSubtitle(fullSubtitle, 0, ['000000', '000001']), false);
+    assert.equal(shouldShowSubtitle(fullSubtitle, true, ['000', '001']), false);
   });
 
   it('always shows when `show_only_first_time` is false', () => {
     const sub = { ...fullSubtitle, show_only_first_time: false };
-    assert.equal(shouldShowSubtitle(sub, 0, ['000000', '000001', '000002']), true);
+    assert.equal(shouldShowSubtitle(sub, true, ['000', '001', '002']), true);
   });
 
   it('treats a non-array history as empty (first time)', () => {
-    assert.equal(shouldShowSubtitle(fullSubtitle, 0, undefined), true);
+    assert.equal(shouldShowSubtitle(fullSubtitle, true, undefined), true);
   });
 });
 

@@ -3,7 +3,7 @@ import { listAlias, readShownLists, markListShown, orderedCandidates, LAST_INDEX
 import { hasNextSubSentence, clampSubIndex } from './subSentences.js';
 import { resolveSubtitleText, shouldShowSubtitle, resolveExtraDelayMs } from './subtitle.js';
 
-const { behavior, visuals, subtitle } = data;
+const { behavior, visuals, 'subtitle-begin': subtitleBegin, 'subtitle-end': subtitleEnd } = data;
 
 // Apply visual config
 const root = document.documentElement;
@@ -25,12 +25,15 @@ if (visuals) {
   if (visuals.exit_easing) root.style.setProperty('--exit-easing', visuals.exit_easing);
 }
 
-if (subtitle) {
-  if (subtitle.text_color) root.style.setProperty('--sub-text-color', subtitle.text_color);
-  if (subtitle.font_family) root.style.setProperty('--sub-font-family', subtitle.font_family);
-  if (subtitle.font_size) root.style.setProperty('--sub-font-size', subtitle.font_size);
-  if (subtitle.font_weight) root.style.setProperty('--sub-font-weight', subtitle.font_weight);
+function applySubtitleVars(subtitle, prefix) {
+  if (!subtitle) return;
+  if (subtitle.text_color) root.style.setProperty(`--sub-${prefix}-text-color`, subtitle.text_color);
+  if (subtitle.font_family) root.style.setProperty(`--sub-${prefix}-font-family`, subtitle.font_family);
+  if (subtitle.font_size) root.style.setProperty(`--sub-${prefix}-font-size`, subtitle.font_size);
+  if (subtitle.font_weight) root.style.setProperty(`--sub-${prefix}-font-weight`, subtitle.font_weight);
 }
+applySubtitleVars(subtitleBegin, 'begin');
+applySubtitleVars(subtitleEnd, 'end');
 
 function parseDurationMs(str) {
   if (!str) return 0;
@@ -100,7 +103,7 @@ async function loadSentences() {
         }
 
         // Don't re-record on every reload of the same direct link, otherwise a
-        // bookmarked `/000000` would append a duplicate entry to the shown-list
+        // bookmarked `/000` would append a duplicate entry to the shown-list
         // history on each visit and grow it without bound.
         const targetAlias = listAlias(targetPath);
         const shown = readShownLists();
@@ -288,6 +291,7 @@ function showSentence(index) {
   
   subtitleDiv.classList.remove('exit');
   subtitleDiv.classList.remove('active');
+  subtitleDiv.classList.remove('begin', 'end');
   subtitleDiv.textContent = '';
   clearTimeout(subtitleTimeout);
   
@@ -307,15 +311,32 @@ function showSentence(index) {
   
   renderSentenceContent(sentences[index][currentLanguage], currentSubIndex);
 
-  if (shouldShowSubtitle(subtitle, index, readShownLists())) {
-    const text = resolveSubtitleText(subtitle, currentLanguage);
+  let activeSubtitle = null;
+  let activeSubtitleType = null;
+  
+  const isBegin = index === 0;
+  const isEnd = index === sentences.length - 1;
+  const shownLists = readShownLists();
+
+  // Begin takes precedence when both match (e.g. a single-sentence list).
+  if (shouldShowSubtitle(subtitleBegin, isBegin, shownLists)) {
+    activeSubtitle = subtitleBegin;
+    activeSubtitleType = 'begin';
+  } else if (shouldShowSubtitle(subtitleEnd, isEnd, shownLists)) {
+    activeSubtitle = subtitleEnd;
+    activeSubtitleType = 'end';
+  }
+
+  if (activeSubtitle) {
+    const text = resolveSubtitleText(activeSubtitle, currentLanguage);
     if (text) {
       subtitleDiv.textContent = text;
+      subtitleDiv.classList.add(activeSubtitleType);
       subtitleTimeout = setTimeout(() => {
-        if (currentIndex === 0 && !contentDiv.classList.contains('exit')) {
+        if (!contentDiv.classList.contains('exit')) {
           subtitleDiv.classList.add('active');
         }
-      }, resolveExtraDelayMs(subtitle));
+      }, resolveExtraDelayMs(activeSubtitle));
     }
   }
 
@@ -370,9 +391,14 @@ function setLanguage(lang) {
     currentSubIndex = clampSubIndex(sentenceData, currentSubIndex);
     renderSentenceContent(sentenceData, currentSubIndex);
     
-    if (currentIndex === 0 && subtitleDiv.textContent) {
-      const text = resolveSubtitleText(subtitle, currentLanguage);
-      if (text) subtitleDiv.textContent = text;
+    if (subtitleDiv.textContent) {
+      const isBegin = currentIndex === 0;
+      const isEnd = currentIndex === sentences.length - 1;
+      const activeSub = isBegin ? subtitleBegin : (isEnd ? subtitleEnd : null);
+      if (activeSub) {
+        const text = resolveSubtitleText(activeSub, currentLanguage);
+        if (text) subtitleDiv.textContent = text;
+      }
     }
   }
 }
