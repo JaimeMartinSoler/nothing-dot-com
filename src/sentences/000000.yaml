@@ -30,25 +30,25 @@
   es: "El motivo es"
 
 - en: "That you are dumb"
-  es: "Que eres tonto"
+  es: "Que eres tonto/a"
 
 - en: "And lonely"
-  es: "Y estás solo"
+  es: "Y estás solo/a"
 
 - en: "Nah..."
   es: "Qué va..."
 
 - en: "You are not dumb"
-  es: "No eres tonto"
+  es: "No eres tonto/a"
 
 - en: 
     - "Neither lonely probably"
-    - ", maybe alone right now"
-    - ", but not lonely"
+    - ",\nmaybe alone right now"
+    - ",\nbut not lonely"
   es: 
-    - "Tampoco solo probablemente"
-    - ", puede que estés solo ahora mismo"
-    - ", pero no estás solo en general"
+    - "Tampoco solo/a probablemente"
+    - ",\npuede que estés solo/a ahora mismo"
+    - ",\npero no estás solo/a en general"
 
 - en: "I was kind of rude before, sorry"
   es: "Fui un poco grosero antes, lo siento"
@@ -58,10 +58,10 @@
 
 - en: 
     - "And I'm not dumb because I can't even be that"
-    - ", I'm just a list of sentences"
+    - ",\nI'm just a list of sentences"
   es: 
     - "Y no soy tonto porque ni siquiera puedo serlo"
-    - ", solo soy una lista de frases"
+    - ",\nsolo soy una lista de frases"
 
 - en: "Am I?"
   es: "¿Lo soy?"
@@ -71,10 +71,10 @@
 
 - en: 
     - "And I'm programmed to lure you into this trap"
-    - ", getting my owner more money for each click that you make"
+    - ",\ngetting my owner more money for each click that you make"
   es: 
     - "Y estoy programado para atraerte a esta trampa"
-    - ", consiguiendo más dinero para mi creador por cada click que haces"
+    - ",\nconsiguiendo más dinero para mi creador por cada click que haces"
 
 - en: "That would explain why I got you to still be here"
   es: "Eso explicaría por qué he conseguido que sigas aquí"
@@ -93,20 +93,20 @@
 
 - en: 
     - "And yet, here you are still"
-    - ", click"
+    - ",\nclick"
     - ", click"
     - ", click"
   es: 
     - "Y sin embargo, aquí sigues"
-    - ", click"
+    - ",\nclick"
     - ", click"
     - ", click"
 
 - en: "I don't want to be rude again, you are not dumb"
-  es: "No quiero ser grosero otra vez, no eres tonto"
+  es: "No quiero ser grosero otra vez, no eres tonto/a"
 
 - en: "But this doesn't make you super clever"
-  es: "Pero esto tampoco te hace súper listo"
+  es: "Pero esto tampoco te hace súper listo/a"
 
 - en: "You have to give me that, at least"
   es: "Tienes que reconocerme eso, al menos"
@@ -116,16 +116,16 @@
 
 - en: 
     - "And here you are"
-    - " , focused"
-    - " , relaxed"
-    - " , lowering your dopamine..."
-    - " , that's not dumb"
+    - ",\nfocused"
+    - ", relaxed"
+    - ",\nlowering your dopamine..."
+    - ",\nthat's not dumb"
   es: 
     - "Y aquí estás tú"
-    - " , concentrado"
-    - " , relajado"
-    - " , bajando tu dopamina..."
-    - " , eso no es de tontos"
+    - ", concentrado/a"
+    - ", relajado/a"
+    - ", bajando tu dopamina..."
+    - ", eso no es de tontos"
 
 - en: "OK, I'll give you that"
   es: "Vale, eso te lo reconozco"
@@ -136,21 +136,30 @@
 - en: "Nah, I just made that up"
   es: "Qué va, me lo acabo de inventar"
 
+- en: "Anyway..."
+  es: "En fin..."
+
 - en: 
     - "All that noise"
-    - ", videos"
+    - ",\nvideos"
     - ", traffic"
     - ", scroll"
-    - ", people walking fast"
+    - ",\npeople walking fast"
   es: 
     - "Todo ese ruido"
-    - ", vídeos"
+    - ",\nvídeos"
     - ", tráfico"
     - ", scroll"
-    - ", gente caminando rápido"
+    - ",\ngente caminando rápido"
 
-- en: "People walking fast"
-  es: "Gente caminando rápido"
+- en:
+    - "People"
+    - " walking"
+    - " fast"
+  es: 
+    - "Gente"
+    - " caminando"
+    - " rápido"
 
 - en: "To get to"
   es: "Para llegar a"
@@ -173,17 +182,21 @@
 - en: "They don't know what they wanna get"
   es: "No saben lo que quieren conseguir"
 
-- en: "But then, you came here"
-  es: "Pero entonces, tú viniste aquí"
+- en:
+    - "But then"  
+    - ",\nyou came here"
+  es: 
+    - "Pero entonces"  
+    - ",\ntú viniste aquí"
 
 - en: 
-    - "To stay,"
-    - " not to walk,"
-    - " to stay"
+    - "To stay"
+    - ",\nnot to walk"
+    - ",\nto stay"
   es: 
-    - "A quedarte,"
-    - " no a caminar,"
-    - " a quedarte"
+    - "A quedarte"
+    - ",\nno a caminar"
+    - ",\na quedarte"
 
 - en: "And at least you know what you are gonna get"
   es: "Y al menos sabes lo que vas a conseguir"
