@@ -89,14 +89,12 @@ visuals:
 # ==============================================================================
 # SUBTITLE CONFIGURATION
 # ==============================================================================
-# An optional hint rendered under the very first sentence (e.g. how to interact).
-# The ENTIRE block is optional: remove it, or any field below, and the site keeps
-# working normally — a missing block, a missing `sentence` map, or a missing
-# active-language key simply means no subtitle is shown. The styling fields are
-# read by `main.js` and injected as CSS Custom Properties (the `--sub-*` variables
-# in style.css); each falls back to its matching main-text value when left null.
+# Optional hints rendered under the very first or very last sentence (e.g. how to interact).
+# The ENTIRE blocks are optional. The styling fields are read by `main.js` and injected 
+# as CSS Custom Properties (the `--sub-begin-*` and `--sub-end-*` variables in style.css); 
+# each falls back to its matching main-text value when left null.
 # ==============================================================================
-subtitle:
+subtitle-begin:
   # -> The subtitle text, per language, injected (via textContent) under the first
   # sentence. Newlines ("\n") are honored. Omit a language — or the whole
   # `sentence` map — to render no subtitle for it.
@@ -112,20 +110,54 @@ subtitle:
   # -> If true, the subtitle is only shown on the first cycle through the sentence
   # lists (i.e. once per full run through all lists), not on every visit.
   # Set to false to show it on the first sentence of every cycle.
-  show_only_first_time: true
+  show_only_first_time: false
 
-  # -> Injects into --sub-text-color in style.css. Sets the subtitle font color.
+  # -> Injects into --sub-begin-text-color in style.css. Sets the subtitle font color.
   # Falls back to the main --text-color when null.
   text_color: null
 
-  # -> Injects into --sub-font-family in style.css. Sets the subtitle typography.
+  # -> Injects into --sub-begin-font-family in style.css. Sets the subtitle typography.
   # Falls back to the main --font-family when null.
   font_family: null
 
-  # -> Injects into --sub-font-size in style.css. Sets how large the subtitle
+  # -> Injects into --sub-begin-font-size in style.css. Sets how large the subtitle
   # appears. Falls back to 80% of the main --font-size when null.
   font_size: "1.5rem"
 
-  # -> Injects into --sub-font-weight in style.css. Sets the subtitle thickness.
+  # -> Injects into --sub-begin-font-weight in style.css. Sets the subtitle thickness.
+  # Falls back to the main --font-weight when null.
+  font_weight: null
+
+subtitle-end:
+  # -> The subtitle text, per language, injected (via textContent) under the last
+  # sentence. Newlines ("\n") are honored. Omit a language — or the whole
+  # `sentence` map — to render no subtitle for it.
+  sentence:
+    en: "\n(refresh the page to get more nothing)"
+    es: "\n(refresca la página para más nada)"
+
+  # -> Extra delay (in milliseconds) after the main sentence appears before the
+  # subtitle fades in. Defaults to 0 (fades in together with the sentence); an
+  # explicit 0 is honored.
+  extra_delay_ms: 2000
+
+  # -> If true, the subtitle is only shown on the first cycle through the sentence
+  # lists (i.e. once per full run through all lists), not on every visit.
+  # Set to false to show it on the last sentence of every cycle.
+  show_only_first_time: false
+
+  # -> Injects into --sub-end-text-color in style.css. Sets the subtitle font color.
+  # Falls back to the main --text-color when null.
+  text_color: null
+
+  # -> Injects into --sub-end-font-family in style.css. Sets the subtitle typography.
+  # Falls back to the main --font-family when null.
+  font_family: null
+
+  # -> Injects into --sub-end-font-size in style.css. Sets how large the subtitle
+  # appears. Falls back to 80% of the main --font-size when null.
+  font_size: "1.5rem"
+
+  # -> Injects into --sub-end-font-weight in style.css. Sets the subtitle thickness.
   # Falls back to the main --font-weight when null.
   font_weight: null

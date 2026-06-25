@@ -48,11 +48,18 @@ html {
   position: relative;
 }
 
-#subtitle {
-  color: var(--sub-text-color, var(--text-color));
-  font-family: var(--sub-font-family, var(--font-family));
-  font-size: var(--sub-font-size, calc(var(--font-size) * 0.8));
-  font-weight: var(--sub-font-weight, var(--font-weight));
+#subtitle.begin {
+  color: var(--sub-begin-text-color, var(--text-color));
+  font-family: var(--sub-begin-font-family, var(--font-family));
+  font-size: var(--sub-begin-font-size, calc(var(--font-size) * 0.8));
+  font-weight: var(--sub-begin-font-weight, var(--font-weight));
+}
+
+#subtitle.end {
+  color: var(--sub-end-text-color, var(--text-color));
+  font-family: var(--sub-end-font-family, var(--font-family));
+  font-size: var(--sub-end-font-size, calc(var(--font-size) * 0.8));
+  font-weight: var(--sub-end-font-weight, var(--font-weight));
 }
 
 /* Typography and Transition */
