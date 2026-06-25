@@ -122,10 +122,10 @@
     - ",\nthat's not dumb"
   es: 
     - "Y aquí estás tú"
-    - ", concentrado/a"
+    - ",\nconcentrado/a"
     - ", relajado/a"
-    - ", bajando tu dopamina..."
-    - ", eso no es de tontos"
+    - ",\nbajando tu dopamina..."
+    - ",\neso no es de tontos"
 
 - en: "OK, I'll give you that"
   es: "Vale, eso te lo reconozco"
@@ -183,10 +183,10 @@
   es: "No saben lo que quieren conseguir"
 
 - en:
-    - "But then"  
+    - "But then"
     - ",\nyou came here"
   es: 
-    - "Pero entonces"  
+    - "Pero entonces"
     - ",\ntú viniste aquí"
 
 - en: 
