@@ -100,7 +100,7 @@ async function loadSentences() {
         }
 
         // Don't re-record on every reload of the same direct link, otherwise a
-        // bookmarked `/000000` would append a duplicate entry to the shown-list
+        // bookmarked `/000` would append a duplicate entry to the shown-list
         // history on each visit and grow it without bound.
         const targetAlias = listAlias(targetPath);
         const shown = readShownLists();
