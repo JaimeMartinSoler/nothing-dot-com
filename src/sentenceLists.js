@@ -11,7 +11,7 @@ export const SHOWN_LISTS_KEY = 'nothing_sentences_shown';
 export const LAST_INDEX_KEY = 'nothing_sentence_last_index';
 
 // Filename (no extension) of a list path, used as its stored alias:
-// './sentences/000001.yaml' -> '000001'. Aliases can be any word, not just digits.
+// './sentences/001.yaml' -> '001'. Aliases can be any word, not just digits.
 export function listAlias(path) {
   const match = path.match(/([^/]+)\.yaml$/);
   return match ? match[1] : path;
@@ -55,7 +55,7 @@ function shuffle(arr, random) {
 // from lists not yet shown; once all have been shown the history is exhausted
 // and we start over from the full set. When `startWithFirst` is true and the
 // history is empty (first visit or a freshly completed cycle), the first list
-// (sorted, e.g. '000000') is tried first; otherwise order is random. Remaining
+// (sorted, e.g. '000') is tried first; otherwise order is random. Remaining
 // candidates follow in random order so a failed load retries a different list.
 export function orderedCandidates(paths, shown, startWithFirst, random = Math.random) {
   const sorted = [...paths].sort();

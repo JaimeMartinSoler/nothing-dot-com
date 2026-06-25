@@ -47,16 +47,16 @@ describe('shouldShowSubtitle', () => {
 
   it('shows on the first cycle when `show_only_first_time` is set', () => {
     assert.equal(shouldShowSubtitle(fullSubtitle, 0, []), true);
-    assert.equal(shouldShowSubtitle(fullSubtitle, 0, ['000000']), true);
+    assert.equal(shouldShowSubtitle(fullSubtitle, 0, ['000']), true);
   });
 
   it('hides on later cycles when `show_only_first_time` is set', () => {
-    assert.equal(shouldShowSubtitle(fullSubtitle, 0, ['000000', '000001']), false);
+    assert.equal(shouldShowSubtitle(fullSubtitle, 0, ['000', '001']), false);
   });
 
   it('always shows when `show_only_first_time` is false', () => {
     const sub = { ...fullSubtitle, show_only_first_time: false };
-    assert.equal(shouldShowSubtitle(sub, 0, ['000000', '000001', '000002']), true);
+    assert.equal(shouldShowSubtitle(sub, 0, ['000', '001', '002']), true);
   });
 
   it('treats a non-array history as empty (first time)', () => {

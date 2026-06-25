@@ -34,12 +34,12 @@ function throwingStorage(initial = {}) {
   };
 }
 
-const PATHS = ['./sentences/000000.yaml', './sentences/000001.yaml', './sentences/000002.yaml'];
+const PATHS = ['./sentences/000.yaml', './sentences/001.yaml', './sentences/002.yaml'];
 const ALIASES = PATHS.map(listAlias);
 
 describe('listAlias', () => {
   it('extracts the filename without extension as the alias', () => {
-    assert.equal(listAlias('./sentences/000001.yaml'), '000001');
+    assert.equal(listAlias('./sentences/001.yaml'), '001');
   });
 
   it('supports non-numeric aliases (any word)', () => {
@@ -65,28 +65,28 @@ describe('readShownLists', () => {
   });
 
   it('parses a stored array', () => {
-    assert.deepEqual(readShownLists(fakeStorage({ [SHOWN_LISTS_KEY]: '["000000"]' })), ['000000']);
+    assert.deepEqual(readShownLists(fakeStorage({ [SHOWN_LISTS_KEY]: '["000"]' })), ['000']);
   });
 });
 
 describe('markListShown', () => {
   it('appends the alias to the stored history', () => {
     const storage = fakeStorage();
-    markListShown('000000', ALIASES, storage);
-    assert.deepEqual(readShownLists(storage), ['000000']);
-    markListShown('000001', ALIASES, storage);
-    assert.deepEqual(readShownLists(storage), ['000000', '000001']);
+    markListShown('000', ALIASES, storage);
+    assert.deepEqual(readShownLists(storage), ['000']);
+    markListShown('001', ALIASES, storage);
+    assert.deepEqual(readShownLists(storage), ['000', '001']);
   });
 
   it('resets history before recording once every list has been shown', () => {
     const storage = fakeStorage({ [SHOWN_LISTS_KEY]: JSON.stringify(ALIASES) });
-    markListShown('000001', ALIASES, storage);
-    assert.deepEqual(readShownLists(storage), ['000001']);
+    markListShown('001', ALIASES, storage);
+    assert.deepEqual(readShownLists(storage), ['001']);
   });
 
   it('does not throw when storage.setItem throws (private mode / quota)', () => {
     const storage = throwingStorage();
-    assert.doesNotThrow(() => markListShown('000000', ALIASES, storage));
+    assert.doesNotThrow(() => markListShown('000', ALIASES, storage));
   });
 });
 
@@ -99,47 +99,47 @@ describe('orderedCandidates', () => {
 
   it('starts a fresh cycle with the first (sorted) list when the flag is on', () => {
     const result = orderedCandidates(PATHS, [], true, always);
-    assert.equal(result[0], './sentences/000000.yaml');
+    assert.equal(result[0], './sentences/000.yaml');
   });
 
   it('orders by the sorted-first list even if paths arrive unsorted', () => {
     const unsorted = [PATHS[2], PATHS[0], PATHS[1]];
     const result = orderedCandidates(unsorted, [], true, always);
-    assert.equal(result[0], './sentences/000000.yaml');
+    assert.equal(result[0], './sentences/000.yaml');
   });
 
   it('does not force the first list when the flag is off', () => {
     // With random()===0 the Fisher-Yates shuffle moves index 0 away from the
-    // front, so a fresh cycle no longer starts deterministically with 000000.
+    // front, so a fresh cycle no longer starts deterministically with 000.
     const result = orderedCandidates(PATHS, [], false, always);
-    assert.notEqual(result[0], './sentences/000000.yaml');
+    assert.notEqual(result[0], './sentences/000.yaml');
     assert.equal(result.length, PATHS.length);
   });
 
   it('excludes already-shown lists', () => {
-    const result = orderedCandidates(PATHS, ['000000'], false, always);
-    assert.ok(!result.map(listAlias).includes('000000'));
-    assert.deepEqual(result.map(listAlias).sort(), ['000001', '000002']);
+    const result = orderedCandidates(PATHS, ['000'], false, always);
+    assert.ok(!result.map(listAlias).includes('000'));
+    assert.deepEqual(result.map(listAlias).sort(), ['001', '002']);
   });
 
   it('only the unseen list remains when all but one are shown', () => {
-    const result = orderedCandidates(PATHS, ['000000', '000002'], false, always);
-    assert.deepEqual(result, ['./sentences/000001.yaml']);
+    const result = orderedCandidates(PATHS, ['000', '002'], false, always);
+    assert.deepEqual(result, ['./sentences/001.yaml']);
   });
 
   it('resets to the full set once every list has been shown', () => {
     const result = orderedCandidates(PATHS, ALIASES, false, always);
-    assert.deepEqual(result.map(listAlias).sort(), ['000000', '000001', '000002']);
+    assert.deepEqual(result.map(listAlias).sort(), ['000', '001', '002']);
   });
 
   it('starts a reset cycle with the first list when the flag is on', () => {
     const result = orderedCandidates(PATHS, ALIASES, true, always);
-    assert.equal(result[0], './sentences/000000.yaml');
+    assert.equal(result[0], './sentences/000.yaml');
   });
 
   it('keeps every candidate so a failed load can retry another list', () => {
     const result = orderedCandidates(PATHS, [], true, always);
-    assert.deepEqual(result.map(listAlias).sort(), ['000000', '000001', '000002']);
+    assert.deepEqual(result.map(listAlias).sort(), ['000', '001', '002']);
   });
 });
 
