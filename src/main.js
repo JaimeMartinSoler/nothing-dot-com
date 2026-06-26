@@ -251,6 +251,8 @@ function nextSentence() {
       spans[currentSubIndex].classList.remove('hidden');
     }
     
+    scheduleSubtitle();
+    
     setTimeout(() => {
       isTransitioning = false;
     }, behavior.cooldown_ms);
@@ -284,6 +286,41 @@ function nextSentence() {
   }, exitDurationMs);
 }
 
+function scheduleSubtitle() {
+  const sentenceData = sentences[currentIndex][currentLanguage];
+  if (hasNextSubSentence(sentenceData, currentSubIndex)) return;
+  if (subtitleDiv.textContent) return;
+  
+  let activeSubtitle = null;
+  let activeSubtitleType = null;
+  
+  const isBegin = currentIndex === 0;
+  const isEnd = currentIndex === sentences.length - 1;
+  const shownLists = readShownLists();
+
+  // Begin takes precedence when both match (e.g. a single-sentence list).
+  if (shouldShowSubtitle(subtitleBegin, isBegin, shownLists)) {
+    activeSubtitle = subtitleBegin;
+    activeSubtitleType = 'begin';
+  } else if (shouldShowSubtitle(subtitleEnd, isEnd, shownLists)) {
+    activeSubtitle = subtitleEnd;
+    activeSubtitleType = 'end';
+  }
+
+  if (activeSubtitle) {
+    const text = resolveSubtitleText(activeSubtitle, currentLanguage);
+    if (text) {
+      subtitleDiv.textContent = text;
+      subtitleDiv.classList.add(activeSubtitleType);
+      subtitleTimeout = setTimeout(() => {
+        if (!contentDiv.classList.contains('exit')) {
+          subtitleDiv.classList.add('active');
+        }
+      }, resolveExtraDelayMs(activeSubtitle));
+    }
+  }
+}
+
 function showSentence(index) {
   // Reset classes
   contentDiv.classList.remove('exit');
@@ -311,34 +348,7 @@ function showSentence(index) {
   
   renderSentenceContent(sentences[index][currentLanguage], currentSubIndex);
 
-  let activeSubtitle = null;
-  let activeSubtitleType = null;
-  
-  const isBegin = index === 0;
-  const isEnd = index === sentences.length - 1;
-  const shownLists = readShownLists();
-
-  // Begin takes precedence when both match (e.g. a single-sentence list).
-  if (shouldShowSubtitle(subtitleBegin, isBegin, shownLists)) {
-    activeSubtitle = subtitleBegin;
-    activeSubtitleType = 'begin';
-  } else if (shouldShowSubtitle(subtitleEnd, isEnd, shownLists)) {
-    activeSubtitle = subtitleEnd;
-    activeSubtitleType = 'end';
-  }
-
-  if (activeSubtitle) {
-    const text = resolveSubtitleText(activeSubtitle, currentLanguage);
-    if (text) {
-      subtitleDiv.textContent = text;
-      subtitleDiv.classList.add(activeSubtitleType);
-      subtitleTimeout = setTimeout(() => {
-        if (!contentDiv.classList.contains('exit')) {
-          subtitleDiv.classList.add('active');
-        }
-      }, resolveExtraDelayMs(activeSubtitle));
-    }
-  }
+  scheduleSubtitle();
 
   // Add active class to trigger the smooth fade in
   contentDiv.classList.add('active');
@@ -399,6 +409,8 @@ function setLanguage(lang) {
         const text = resolveSubtitleText(activeSub, currentLanguage);
         if (text) subtitleDiv.textContent = text;
       }
+    } else {
+      scheduleSubtitle();
     }
   }
 }
