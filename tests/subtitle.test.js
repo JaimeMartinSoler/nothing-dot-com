@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   resolveSubtitleText,
   shouldShowSubtitle,
+  activeSubtitle,
   resolveExtraDelayMs,
 } from '../src/subtitle.js';
 
@@ -61,6 +62,42 @@ describe('shouldShowSubtitle', () => {
 
   it('treats a non-array history as empty (first time)', () => {
     assert.equal(shouldShowSubtitle(fullSubtitle, true, undefined), true);
+  });
+});
+
+describe('activeSubtitle', () => {
+  const begin = { sentence: { en: 'begin' } };
+  const end = { sentence: { en: 'end' } };
+
+  it('selects begin at the first sentence', () => {
+    const active = activeSubtitle(true, false, [], begin, end);
+    assert.deepEqual(active, { subtitle: begin, type: 'begin' });
+  });
+
+  it('selects end at the last sentence', () => {
+    const active = activeSubtitle(false, true, [], begin, end);
+    assert.deepEqual(active, { subtitle: end, type: 'end' });
+  });
+
+  it('returns null in the middle of a list', () => {
+    assert.equal(activeSubtitle(false, false, [], begin, end), null);
+  });
+
+  it('prefers begin over end on a single-sentence list (both match)', () => {
+    const active = activeSubtitle(true, true, [], begin, end);
+    assert.deepEqual(active, { subtitle: begin, type: 'begin' });
+  });
+
+  it('falls through to end when begin is gated out by show_only_first_time', () => {
+    const onceBegin = { ...begin, show_only_first_time: true };
+    // Later cycle (history length > 1): begin is suppressed, but a single-sentence
+    // list is still "end", so the end subtitle takes over.
+    const active = activeSubtitle(true, true, ['000', '001'], onceBegin, end);
+    assert.deepEqual(active, { subtitle: end, type: 'end' });
+  });
+
+  it('returns null when neither subtitle is configured', () => {
+    assert.equal(activeSubtitle(true, true, [], undefined, undefined), null);
   });
 });
 

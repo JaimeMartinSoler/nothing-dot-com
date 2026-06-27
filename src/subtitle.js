@@ -29,6 +29,20 @@ export function shouldShowSubtitle(subtitle, isTargetIndex, shownLists) {
   return shown.length <= 1;
 }
 
+// Select which subtitle (begin/end) applies for the current position and
+// history, or null if neither should show. `isBegin`/`isEnd` mark whether we're
+// at the first / last sentence. Begin takes precedence when both match (e.g. a
+// single-sentence list, where index 0 is also the last index).
+export function activeSubtitle(isBegin, isEnd, shownLists, begin, end) {
+  if (shouldShowSubtitle(begin, isBegin, shownLists)) {
+    return { subtitle: begin, type: 'begin' };
+  }
+  if (shouldShowSubtitle(end, isEnd, shownLists)) {
+    return { subtitle: end, type: 'end' };
+  }
+  return null;
+}
+
 // Resolve the extra delay (ms) before the subtitle fades in. Defaults to 0 and
 // accepts an explicit 0 — only undefined/null fall back to the default.
 export function resolveExtraDelayMs(subtitle) {
