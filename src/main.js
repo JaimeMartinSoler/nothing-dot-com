@@ -286,39 +286,56 @@ function nextSentence() {
   }, exitDurationMs);
 }
 
-function scheduleSubtitle() {
-  const sentenceData = sentences[currentIndex][currentLanguage];
-  if (hasNextSubSentence(sentenceData, currentSubIndex)) return;
-  if (subtitleDiv.textContent) return;
-  
-  let activeSubtitle = null;
-  let activeSubtitleType = null;
-  
+// Which subtitle (begin/end) applies to the current sentence, or null. Shared by
+// space-reservation and fade-in so both agree on the same target.
+// Begin takes precedence when both match (e.g. a single-sentence list).
+function activeSubtitleForCurrent() {
   const isBegin = currentIndex === 0;
   const isEnd = currentIndex === sentences.length - 1;
   const shownLists = readShownLists();
-
-  // Begin takes precedence when both match (e.g. a single-sentence list).
   if (shouldShowSubtitle(subtitleBegin, isBegin, shownLists)) {
-    activeSubtitle = subtitleBegin;
-    activeSubtitleType = 'begin';
-  } else if (shouldShowSubtitle(subtitleEnd, isEnd, shownLists)) {
-    activeSubtitle = subtitleEnd;
-    activeSubtitleType = 'end';
+    return { subtitle: subtitleBegin, type: 'begin' };
   }
+  if (shouldShowSubtitle(subtitleEnd, isEnd, shownLists)) {
+    return { subtitle: subtitleEnd, type: 'end' };
+  }
+  return null;
+}
 
-  if (activeSubtitle) {
-    const text = resolveSubtitleText(activeSubtitle, currentLanguage);
-    if (text) {
-      subtitleDiv.textContent = text;
-      subtitleDiv.classList.add(activeSubtitleType);
-      subtitleTimeout = setTimeout(() => {
-        if (!contentDiv.classList.contains('exit')) {
-          subtitleDiv.classList.add('active');
-        }
-      }, resolveExtraDelayMs(activeSubtitle));
+// Inject the subtitle text up front (still invisible: no `.active`) so its
+// vertical space is reserved the instant the sentence appears. With the space
+// reserved, the column is centered for the final sentence+subtitle layout from
+// the very first sub-sentence, so revealing the subtitle later never shifts the
+// already-shown text. Idempotent.
+function reserveSubtitle() {
+  if (subtitleDiv.textContent) return;
+  const active = activeSubtitleForCurrent();
+  if (!active) return;
+  const text = resolveSubtitleText(active.subtitle, currentLanguage);
+  if (!text) return;
+  subtitleDiv.textContent = text;
+  subtitleDiv.classList.add(active.type);
+}
+
+function scheduleSubtitle() {
+  // Reserve the subtitle's space immediately — even while a progressive
+  // sub-sentence is still revealing — so the layout is centered for the final
+  // sentence+subtitle from the first part and nothing 'jumps' on reveal.
+  reserveSubtitle();
+
+  const sentenceData = sentences[currentIndex][currentLanguage];
+  // Gate only the fade-in (not the layout, already reserved above) until every
+  // sub-sentence has been revealed.
+  if (hasNextSubSentence(sentenceData, currentSubIndex)) return;
+  if (!subtitleDiv.textContent) return;
+  if (subtitleDiv.classList.contains('active')) return;
+
+  clearTimeout(subtitleTimeout);
+  subtitleTimeout = setTimeout(() => {
+    if (!contentDiv.classList.contains('exit')) {
+      subtitleDiv.classList.add('active');
     }
-  }
+  }, resolveExtraDelayMs(activeSubtitleForCurrent()?.subtitle));
 }
 
 function showSentence(index) {
