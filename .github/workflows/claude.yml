@@ -20,145 +20,17 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write # Required to post the "no write access" comment
-      issues: write # Required to post the "no write access" comment
+      pull-requests: write
+      issues: write
       id-token: write
-      actions: read # Required for Claude to read CI results on PRs
+      actions: read
     steps:
-      - name: Verify author has write access
-        id: gate
-        uses: actions/github-script@v7
+      - name: claude-with-model
+        uses: JaimeMartinSoler/github-actions/actions/claude-with-model@main
         with:
-          script: |
-            let authorized = false;
-            try {
-              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                username: context.actor,
-              });
-              // The permission field collapses maintain->write and triage->read.
-              authorized = data.permission === 'admin' || data.permission === 'write';
-            } catch (e) {
-              // e.g. 404 when the actor is not a collaborator at all.
-              authorized = false;
-            }
-            core.setOutput('authorized', authorized ? 'true' : 'false');
-            if (!authorized) {
-              const msg = `@${context.actor} does not have write access to this ` +
-                `repository, so Claude will not run for this request.`;
-              core.warning(msg);
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: msg,
-              });
-            }
-
-      - name: Checkout repository
-        if: steps.gate.outputs.authorized == 'true'
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 1
-          ref: develop
-
-      - name: Fetch available Claude models
-        id: claude_models
-        if: steps.gate.outputs.authorized == 'true'
-        continue-on-error: true
-        env:
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-        run: |
-          set +e
-          RESPONSE=$(curl -sS -m 15 "https://api.anthropic.com/v1/models?limit=1000" \
-            -H "Authorization: Bearer ${CLAUDE_CODE_OAUTH_TOKEN}" \
-            -H "anthropic-version: 2023-06-01")
-          MODELS_JSON=$(printf '%s' "$RESPONSE" | jq -c '[.data[].id]' 2>/dev/null)
-          if [ -z "$MODELS_JSON" ] || [ "$MODELS_JSON" = "null" ]; then
-            MODELS_JSON="[]"
-          fi
-          echo "CLAUDE_MODELS=$MODELS_JSON"
-          {
-            echo "models<<EOF_MODELS"
-            echo "$MODELS_JSON"
-            echo "EOF_MODELS"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Determine requested model from trigger text
-        id: requested_model
-        if: steps.gate.outputs.authorized == 'true'
-        env:
-          ISSUE_BODY: ${{ github.event.issue.body }}
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          COMMENT_BODY: ${{ github.event.comment.body }}
-          REVIEW_BODY: ${{ github.event.review.body }}
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          case "$EVENT_NAME" in
-            issue_comment|pull_request_review_comment)
-              TRIGGER_TEXT="$COMMENT_BODY" ;;
-            pull_request_review)
-              TRIGGER_TEXT="$REVIEW_BODY" ;;
-            issues)
-              TRIGGER_TEXT="$ISSUE_TITLE"$'\n'"$ISSUE_BODY" ;;
-            *)
-              TRIGGER_TEXT="" ;;
-          esac
-
-          CLAUDE_MODEL_RAW=$(printf '%s' "$TRIGGER_TEXT" | grep -ioP 'claude.?model\s*[=:]?\s*\K[\w-]*' | head -n1)
-          echo "CLAUDE_MODEL_RAW=$CLAUDE_MODEL_RAW"
-          echo "raw=$CLAUDE_MODEL_RAW" >> "$GITHUB_OUTPUT"
-
-      - name: Resolve CLAUDE_MODEL
-        id: resolve_model
-        if: steps.gate.outputs.authorized == 'true' && steps.requested_model.outputs.raw != ''
-        env:
-          CLAUDE_MODEL_RAW: ${{ steps.requested_model.outputs.raw }}
-          CLAUDE_MODELS_JSON: ${{ steps.claude_models.outputs.models }}
-        run: |
-          MODELS_JSON="${CLAUDE_MODELS_JSON:-[]}"
-          CLAUDE_MODEL=$(printf '%s' "$MODELS_JSON" | jq -r --arg raw "$CLAUDE_MODEL_RAW" '
-            [.[] | select(ascii_downcase | contains($raw | ascii_downcase))]
-            | sort
-            | last // ""
-          ')
-
-          # No match in the live list (API call failed, or nothing contains the
-          # substring) - fall back to the raw text itself. Claude Code's CLI
-          # accepts short aliases ("opus", "sonnet", "haiku") as well as full
-          # model ids, so this still works in most cases.
-          if [ -z "$CLAUDE_MODEL" ] || [ "$CLAUDE_MODEL" = "null" ]; then
-            CLAUDE_MODEL="$CLAUDE_MODEL_RAW"
-          fi
-
-          echo "CLAUDE_MODEL=$CLAUDE_MODEL"
-          echo "model=$CLAUDE_MODEL" >> "$GITHUB_OUTPUT"
-
-      - name: Run Claude Code (requested model)
-        if: steps.gate.outputs.authorized == 'true' && steps.resolve_model.outputs.model != ''
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--model ${{ steps.resolve_model.outputs.model }}"
-
-          # Base new branches on (and target PRs at) develop, not the default branch (main).
-          base_branch: develop
-
-          # This is an optional setting that allows Claude to read CI results on PRs
-          additional_permissions: |
-            actions: read
-
-      - name: Run Claude Code (default model)
-        if: steps.gate.outputs.authorized == 'true' && steps.resolve_model.outputs.model == ''
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-
-          # Base new branches on (and target PRs at) develop, not the default branch (main).
-          base_branch: develop
-
-          # This is an optional setting that allows Claude to read CI results on PRs
-          additional_permissions: |
-            actions: read
-
+          # --- IMPLEMENTER ACTION SHOULD ONLY MODIFY THESE PARAMETERS: ---
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }} # (provide either this or claude_code_oauth_token)
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }} # (provide either this or anthropic_api_key)
+          # claude_model: 'opus' # (default: empty, get from event body text like 'claude model opus/sonnet/haiku')
+          verify_author_write: 'true' # (default: 'true')
+          base_branch: 'develop' # (default: 'develop')
