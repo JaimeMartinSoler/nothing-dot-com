@@ -1,7 +1,7 @@
 import data from './config.yml';
 import { listAlias, readShownLists, markListShown, orderedCandidates, LAST_INDEX_KEY } from './sentenceLists.js';
 import { hasNextSubSentence, clampSubIndex } from './subSentences.js';
-import { resolveSubtitleText, shouldShowSubtitle, resolveExtraDelayMs } from './subtitle.js';
+import { resolveSubtitleText, activeSubtitle, resolveExtraDelayMs } from './subtitle.js';
 
 const { behavior, visuals, 'subtitle-begin': subtitleBegin, 'subtitle-end': subtitleEnd } = data;
 
@@ -292,14 +292,7 @@ function nextSentence() {
 function activeSubtitleForCurrent() {
   const isBegin = currentIndex === 0;
   const isEnd = currentIndex === sentences.length - 1;
-  const shownLists = readShownLists();
-  if (shouldShowSubtitle(subtitleBegin, isBegin, shownLists)) {
-    return { subtitle: subtitleBegin, type: 'begin' };
-  }
-  if (shouldShowSubtitle(subtitleEnd, isEnd, shownLists)) {
-    return { subtitle: subtitleEnd, type: 'end' };
-  }
-  return null;
+  return activeSubtitle(isBegin, isEnd, readShownLists(), subtitleBegin, subtitleEnd);
 }
 
 // Inject the subtitle text up front (still invisible: no `.active`) so its
@@ -307,9 +300,8 @@ function activeSubtitleForCurrent() {
 // reserved, the column is centered for the final sentence+subtitle layout from
 // the very first sub-sentence, so revealing the subtitle later never shifts the
 // already-shown text. Idempotent.
-function reserveSubtitle() {
+function reserveSubtitle(active) {
   if (subtitleDiv.textContent) return;
-  const active = activeSubtitleForCurrent();
   if (!active) return;
   const text = resolveSubtitleText(active.subtitle, currentLanguage);
   if (!text) return;
@@ -318,10 +310,14 @@ function reserveSubtitle() {
 }
 
 function scheduleSubtitle() {
+  // Resolve the target subtitle once so reservation and fade-in always agree on
+  // the same begin/end target (and we read the shown-list history only once).
+  const active = activeSubtitleForCurrent();
+
   // Reserve the subtitle's space immediately — even while a progressive
   // sub-sentence is still revealing — so the layout is centered for the final
   // sentence+subtitle from the first part and nothing 'jumps' on reveal.
-  reserveSubtitle();
+  reserveSubtitle(active);
 
   const sentenceData = sentences[currentIndex][currentLanguage];
   // Gate only the fade-in (not the layout, already reserved above) until every
@@ -335,7 +331,7 @@ function scheduleSubtitle() {
     if (!contentDiv.classList.contains('exit')) {
       subtitleDiv.classList.add('active');
     }
-  }, resolveExtraDelayMs(activeSubtitleForCurrent()?.subtitle));
+  }, resolveExtraDelayMs(active?.subtitle));
 }
 
 function showSentence(index) {
@@ -419,11 +415,11 @@ function setLanguage(lang) {
     renderSentenceContent(sentenceData, currentSubIndex);
     
     if (subtitleDiv.textContent) {
-      const isBegin = currentIndex === 0;
-      const isEnd = currentIndex === sentences.length - 1;
-      const activeSub = isBegin ? subtitleBegin : (isEnd ? subtitleEnd : null);
-      if (activeSub) {
-        const text = resolveSubtitleText(activeSub, currentLanguage);
+      // Reuse the single source of truth for "which subtitle applies" so this
+      // stays in sync with reservation/fade-in (incl. show_only_first_time).
+      const active = activeSubtitleForCurrent();
+      if (active) {
+        const text = resolveSubtitleText(active.subtitle, currentLanguage);
         if (text) subtitleDiv.textContent = text;
       }
     } else {
